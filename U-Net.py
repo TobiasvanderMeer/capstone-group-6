@@ -16,14 +16,13 @@ test_size = 0.1
 n = 60
 
 
-# Path to your dataset folder
 path_data = r"C:\Users\bramv\Downloads\capstone-group-6\datasets"
 
-# Postfixes of your files
+
 postfix = ["0","_1000to1050","_1050to1400",  "_1400to2000", "_2000to3000", 
            "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
 
-# Lists to store all data
+
 k_all = []
 h_all = []
 
