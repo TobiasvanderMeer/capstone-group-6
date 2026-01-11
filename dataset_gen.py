@@ -19,7 +19,12 @@ def save_data(x, y, id=""):
     np.savetxt(f"datasets/h_set{id}.txt", y.reshape(-1, 3600))
 
 if __name__ == "__main__":
-    start_seed, stop_seed = 7000, 8000
-    print(f"computing seeds {start_seed} to {stop_seed}")
-    x, y =generate_data(list(range(start_seed, stop_seed)))
-    save_data(x, y, id=f"_{start_seed}to{stop_seed}")
+    BLOCK_SIZE = 1000
+    TOTAL_SAMPLES = 20000
+
+    for start_seed in range(0, TOTAL_SAMPLES, BLOCK_SIZE):
+        stop_seed = start_seed + BLOCK_SIZE
+        print(f"computing seeds {start_seed} to {stop_seed}")
+
+        x, y = generate_data(list(range(start_seed, stop_seed)))
+        save_data(x, y, id=f"_{start_seed}to{stop_seed}")

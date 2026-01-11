@@ -8,8 +8,11 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 
-from tensorflow.keras import layers, models
-from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
+import tensorflow as tf
+from tensorflow import keras
+from keras import layers, models
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
+
 from sklearn.model_selection import train_test_split
 
 
@@ -25,10 +28,10 @@ RANDOM_STATE = 42
 PATH_DATA = r"C:\Users\jorri\GitHub\capstone-group-6\datasets"
 
 POSTFIXES = [
-    "0","_1000to1050","_1050to1400","_1400to2000",
-    "_2000to3000","_3000to4000","_4000to5000",
-    "_5000to6000","_6000to7000","_7000to8000"
+    f"_{i}to{i+1000}"
+    for i in range(0, 20000, 1000)
 ]
+
 
 
 # ======================
