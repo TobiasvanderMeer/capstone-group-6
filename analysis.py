@@ -1,17 +1,20 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from utils import load_files
 
-set_id = "_1000to1050"  # the set that was used as test set in the cnn file
+set_ids = ["_1000to1050", "_1050to1400"]  # the set that was used as test set in the cnn file
 #set_id = "0"
 #set_id = "_test"
 result_id = "_test"  # we want to look at the performance on the test set
 
-x = np.loadtxt(f"datasets/k_set{set_id}.txt").reshape((-1, 60, 60))
-y = np.loadtxt(f"datasets/h_set{set_id}.txt").reshape((-1, 60, 60))
+x = load_files("datasets/k_set", set_ids).reshape((-1, 60, 60))
+y = load_files("datasets/h_set", set_ids).reshape((-1, 60, 60))
 pred = np.loadtxt(f"pred{result_id}.txt").reshape((-1, 60, 60))*37+146
 
+print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 
 for i in range(100):
+    print("MAE: ", np.mean(np.abs(y[i] - pred[i])))
     f, (ax1, ax2, ax3) = plt.subplots(1, 3)
     ax1.imshow(np.log(x[i].transpose()))
     # plt.ion()

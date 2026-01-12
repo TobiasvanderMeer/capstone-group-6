@@ -1,7 +1,7 @@
-import numpy
 import numpy as np
 import torch
 from torch import nn
+from utils import load_files
 
 class Model(nn.Module):
     def __init__(self):
@@ -169,10 +169,41 @@ class Model7(nn.Module):
         self.relu = nn.ReLU()
         self.fc1 = nn.Linear(3600, 3600)
         self.fc2 = nn.Linear(3600, 3600)
-        self.conv_p1 = nn.Conv2d(2, 8, 9, padding='same')
-        self.conv_p2 = nn.Conv2d(8, 8, 9, padding='same')
-        self.conv_p3 = nn.Conv2d(8, 8, 9, padding='same')
-        self.conv_p4 = nn.Conv2d(8, 1, 9, padding='same')
+        self.conv_p1 = nn.Conv2d(2, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def powerlayer(self, x, h):
+        # h = self.relu(self.fc_p(h))
+        h2 = torch.cat((x, h), dim=1)
+        h2 = self.relu(self.conv_p1(h2))
+        h2 = self.relu(self.conv_p2(h2))
+        h2 = self.relu(self.conv_p3(h2))
+        h2 = self.conv_p4(h2)  # test relu here
+        return h2
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = h.reshape((-1, 1, 60, 60))
+        for _ in range(5):
+            h = self.relu(self.fc2(h.view((-1, 3600)))).view((-1, 1, 60, 60))
+            h = self.powerlayer(x, h)
+        return h.reshape((-1, 60, 60))
+
+
+class Model8(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.fc2 = nn.Linear(3600, 3600)
+        self.conv_p1 = nn.Conv2d(2, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+        self.conv_f1 = nn.Conv2d(1, 2, 9, padding='same', padding_mode='replicate')
+        self.conv_f2 = nn.Conv2d(2, 1, 7, padding='same', padding_mode='replicate')
 
     def powerlayer(self, x, h):
         # h = self.relu(self.fc_p(h))
@@ -189,22 +220,15 @@ class Model7(nn.Module):
         for _ in range(5):
             h = self.relu(self.fc2(h.view((-1, 3600)))).view((-1, 1, 60, 60))
             h = self.powerlayer(x, h)
-            #h[:, :, :, 0] = 100
-            #h[:, :, :, -2:] = torch.mean(h[:, :, :, -2:], dim=3, keepdim=True)
-            #h[:, :, -2:, :] = torch.mean(h[:, :, -2:, :], dim=2, keepdim=True)
-            #print(torch.exp(x[:, :, 0, :]+4).shape)
-            #print((torch.tensor([-1, 1])[None, None, :, None]  * -500).shape)
-            #h[:, :, :2, :] = (torch.mean(h[:, :, :2, :], dim=2, keepdim=True) +
-            #                  torch.tensor([-1, 1])[None, None, :, None] * torch.exp(x[:, :, 0, :].reshape((-1, 1, 1, 60))+4) * -500*0.1)
+        h = self.relu(self.conv_f1(h))
+        h = self.conv_f2(h)
         return h.reshape((-1, 60, 60))
 
-
-def load_files(filename: str, file_ids: list[str]):
-    return np.concatenate([np.loadtxt(filename + file_id + ".txt") for file_id in file_ids])
-
+#test fc after conv
 
 if __name__ == "__main__":
     train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
+    #train_file_ids = ["0"]
     test_file_ids = ["_1000to1050", "_1050to1400"]
 
     x = torch.tensor(load_files("datasets/k_set", train_file_ids).reshape((-1, 1, 60, 60)), dtype=torch.float)
@@ -222,12 +246,12 @@ if __name__ == "__main__":
     model = Model7()
     #print([i.numel() for i in model.parameters()])
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optim = torch.optim.Adam(model.parameters(), lr=2e-5)
 
     print("baseline loss: ", loss_fn(torch.mean(y, dim=0, keepdim=True), y_test))
 
-    n_epochs = 8
-    batch_size = 50
+    n_epochs = 12  # test more epochs with convergence plot (with less data?)
+    batch_size = 16
     batch_idx = np.arange(x.shape[0])
     for epoch in range(n_epochs):
         np.random.shuffle(batch_idx)
@@ -247,6 +271,6 @@ if __name__ == "__main__":
             test_loss = loss_fn(pred_test, y_test)
             print("test_loss", test_loss.item())
 
-    np.savetxt("pred_train.txt", pred.detach().numpy().reshape((-1, 3600)))
+    np.savetxt("pred_train7b.txt", pred.detach().numpy().reshape((-1, 3600)))
     pred_test = model(z_test).detach().numpy()
-    np.savetxt("pred_test.txt", pred_test.reshape((-1, 3600)))
+    np.savetxt("pred_test7b.txt", pred_test.reshape((-1, 3600)))
