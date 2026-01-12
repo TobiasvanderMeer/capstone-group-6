@@ -51,19 +51,18 @@ if __name__ == "__main__":
     model = Model()
     # print([i.numel() for i in model.parameters()])
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optim = torch.optim.Adam(model.parameters(), lr=3e-4)
 
     print("baseline loss: ", loss_fn(torch.mean(y, dim=0, keepdim=True), y_test))
 
-    n_epochs = 8
+    n_epochs = 12
     batch_size = 50
     batch_idx = np.arange(x.shape[0])
     for epoch in range(n_epochs):
         r = torch.randn(z.shape)
-        print(r.shape)
         t = torch.rand((z.shape[0]))
-        w = r*t.view(-1, 1, 1, 1)
-        zz = w + z*(1-t).view(-1, 1, 1, 1)
+        w = r*torch.sqrt(t).view(-1, 1, 1, 1)
+        zz = w + y.view(-1, 1, 60, 60)*(1-t).view(-1, 1, 1, 1)
 
         np.random.shuffle(batch_idx)
         b_losses = np.zeros((z.shape[0] - 1) // batch_size + 1)
@@ -75,10 +74,17 @@ if __name__ == "__main__":
             optim.step()
             optim.zero_grad()
             b_losses[i] = loss.item()
-            print(loss.item())
+            #print(loss.item())
 
         print(epoch, np.mean(b_losses))
         with torch.no_grad():
-            pred_test = model(z_test)
-            test_loss = loss_fn(pred_test, y_test)
+            r = torch.randn(z_test.shape)
+            t = torch.rand((z_test.shape[0]))
+            w = r * torch.sqrt(t).view(-1, 1, 1, 1)
+            zz = w + y_test.view(-1, 1, 60, 60) * (1 - t).view(-1, 1, 1, 1)
+            pred_test = model(z_test, zz, t)
+            test_loss = loss_fn(pred_test, w)
             print("test_loss", test_loss.item())
+
+    torch.save(model, "cnn2.pt")
+
