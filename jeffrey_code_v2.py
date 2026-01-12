@@ -1,7 +1,13 @@
 ## Import libraries
 
 import numpy as np
+
+import matplotlib
+#-----------faster for data generation---------------
+matplotlib.use("Agg") 
+#----------------------------------------------------
 import matplotlib.pyplot as plt
+
 
 import scipy
 from scipy.sparse.linalg import LaplacianNd, spsolve
