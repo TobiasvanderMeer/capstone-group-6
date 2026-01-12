@@ -5,7 +5,7 @@ from utils import load_files
 set_ids = ["_1000to1050", "_1050to1400"]  # the set that was used as test set in the cnn file
 #set_id = "0"
 #set_id = "_test"
-result_id = "_test"  # we want to look at the performance on the test set
+result_id = "_test11"  # we want to look at the performance on the test set
 
 x = load_files("datasets/k_set", set_ids).reshape((-1, 60, 60))
 y = load_files("datasets/h_set", set_ids).reshape((-1, 60, 60))
@@ -19,7 +19,7 @@ for i in range(100):
     ax1.imshow(np.log(x[i].transpose()))
     # plt.ion()
     ax2.imshow(y[i], interpolation='none')
-    ax2.contour(y[i], levels=20, colors=["black"])
+    ax2.contour(y[i], levels=10, colors=["black"])
     ax3.imshow(pred[i], interpolation='none')
-    ax3.contour(pred[i], levels=20, colors=["black"])
+    ax3.contour(pred[i], levels=10, colors=["black"])
     plt.show(block=True)

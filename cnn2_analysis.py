@@ -45,10 +45,10 @@ yt = (torch.tensor(y, dtype=torch.float)-146)/37
 model = torch.load('cnn2.pt', weights_only=False)
 
 for i in range(100):
-    t = torch.tensor(0.5)
+    t = torch.tensor(1.0)
     r = torch.randn((1, 1, 60, 60))
-    w = r * torch.sqrt(t).view(-1, 1, 1, 1)
-    zz = w + yt.view(-1, 1, 60, 60) * (1 - t).view(-1, 1, 1, 1)
+    w = r * torch.sqrt(t).view(1, 1, 1, 1)
+    zz = w + yt[i].view(1, 1, 60, 60) * (1 - t).view(1, 1, 1, 1)
 
     pred = (zz - model(z, zz, t).detach().numpy())[0, 0]*37+146
     #print("MAE: ", np.mean(np.abs(y[i] - pred[i])))

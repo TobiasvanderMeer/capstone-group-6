@@ -224,6 +224,118 @@ class Model8(nn.Module):
         h = self.conv_f2(h)
         return h.reshape((-1, 60, 60))
 
+
+class Block(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.fc2 = nn.Linear(3600, 3600)
+        self.conv1 = nn.Conv2d(4, 8, 9, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 4, 60, 60))
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.relu(self.fc1(x.view(-1, 3600))).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.relu(self.fc2(hr.view(-1, 3600)).view(-1, 60, 60))
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.conv4(r)
+        return r
+
+class Model9(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.block_1 = Block()
+        self.block_2 = Block()
+        self.block_3 = Block()
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = h.reshape((-1, 1, 60, 60))
+        h = self.relu(self.block_1(x, h))
+        h = self.relu(self.block_2(x, h))
+        h = self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+class Model10(nn.Module):
+    #trains OK (12 epochs 7600 samples) MAE 5.33788 minor sign of overfitting
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.block_1 = Block()
+        self.block_2 = Block()
+        self.block_3 = Block()
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+class Block2(nn.Module):
+    def __init__(self, n_hidden=144):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, 3600)
+        self.fc3 = nn.Linear(3600, n_hidden)
+        self.fc4 = nn.Linear(n_hidden, 3600)
+        self.prep1 = nn.Sequential(self.fc1, self.relu, self.fc2, self.relu)
+        self.prep2 = nn.Sequential(self.fc3, self.relu, self.fc4, self.relu)
+        self.conv1 = nn.Conv2d(4, 8, 9, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 4, 60, 60))
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.prep2(hr.view(-1, 3600)).view(-1, 60, 60)
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.conv4(r)
+        return r
+
+class Model11(nn.Module):
+    #best so far converges nicely likely better performance with lower learning rate and more epochs no overfitting
+    #(12 epochs 7600 samples) lr 3e-5 MAE 3.893
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 144)
+        self.fc2 = nn.Linear(144, 3600)
+        self.block_1 = Block2(n_hidden=144)
+        self.block_2 = Block2(n_hidden=144)
+        self.block_3 = Block2(n_hidden=225)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
 #test fc after conv
 
 if __name__ == "__main__":
@@ -243,10 +355,10 @@ if __name__ == "__main__":
     print(torch.mean((y - torch.mean(y, dim=0))**2))
     print(torch.mean(y))
 
-    model = Model7()
-    #print([i.numel() for i in model.parameters()])
+    model = Model11()
+    print([i.numel() for i in model.parameters()])
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=2e-5)
+    optim = torch.optim.Adam(model.parameters(), lr=3e-5)
 
     print("baseline loss: ", loss_fn(torch.mean(y, dim=0, keepdim=True), y_test))
 
@@ -263,7 +375,7 @@ if __name__ == "__main__":
             optim.step()
             optim.zero_grad()
             b_losses[i] = loss.item()
-            print(loss.item())
+            print(epoch, i, loss.item())
 
         print(epoch, np.mean(b_losses))
         with torch.no_grad():
@@ -271,6 +383,6 @@ if __name__ == "__main__":
             test_loss = loss_fn(pred_test, y_test)
             print("test_loss", test_loss.item())
 
-    np.savetxt("pred_train7b.txt", pred.detach().numpy().reshape((-1, 3600)))
+    np.savetxt("pred_train11.txt", pred.detach().numpy().reshape((-1, 3600)))
     pred_test = model(z_test).detach().numpy()
-    np.savetxt("pred_test7b.txt", pred_test.reshape((-1, 3600)))
+    np.savetxt("pred_test11.txt", pred_test.reshape((-1, 3600)))
