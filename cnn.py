@@ -1,4 +1,5 @@
-import numpy
+import time
+from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
@@ -219,34 +220,107 @@ if __name__ == "__main__":
     print(torch.mean((y - torch.mean(y, dim=0))**2))
     print(torch.mean(y))
 
-    model = Model7()
-    #print([i.numel() for i in model.parameters()])
+    # -------------------------
+    # Device (GPU if available)
+    # -------------------------
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("using device:", device)
+
+    # Move full datasets to device once (fast + simple; fits easily in VRAM here)
+    z = z.to(device)
+    y = y.to(device)
+    z_test = z_test.to(device)
+    y_test = y_test.to(device)
+
+    # -------------------------
+    # Model / loss / optimizer
+    # -------------------------
+    model = Model7().to(device)
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-    print("baseline loss: ", loss_fn(torch.mean(y, dim=0, keepdim=True), y_test))
+    # Baseline (predict mean field from train set)
+    baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
+    print("baseline loss:", baseline)
 
+    # -------------------------
+    # Training loop
+    # -------------------------
     n_epochs = 8
     batch_size = 50
-    batch_idx = np.arange(x.shape[0])
-    for epoch in range(n_epochs):
+    batch_idx = np.arange(z.shape[0])
+
+    # Checkpoint folder
+    out_dir = Path("checkpoints")
+    out_dir.mkdir(exist_ok=True)
+
+    best_test = float("inf")
+
+    for epoch in range(1, n_epochs + 1):
+        t0 = time.time()
+
+        model.train()
         np.random.shuffle(batch_idx)
-        b_losses = np.zeros((z.shape[0] - 1) // batch_size + 1)
-        for i in range((z.shape[0] - 1) // batch_size + 1):
-            pred = model.forward(z[batch_idx[i*batch_size:(i+1)*batch_size]])
-            loss = loss_fn(pred, y[batch_idx[i*batch_size:(i+1)*batch_size]])
+
+        epoch_losses = []
+
+        n_batches = (z.shape[0] - 1) // batch_size + 1
+        for i in range(n_batches):
+            idx = batch_idx[i * batch_size:(i + 1) * batch_size]
+
+            pred = model(z[idx])
+            loss = loss_fn(pred, y[idx])
+
             loss.backward()
             optim.step()
             optim.zero_grad()
-            b_losses[i] = loss.item()
-            print(loss.item())
 
-        print(epoch, np.mean(b_losses))
+            epoch_losses.append(loss.item())
+
+        train_loss = float(np.mean(epoch_losses))
+
+        model.eval()
         with torch.no_grad():
             pred_test = model(z_test)
-            test_loss = loss_fn(pred_test, y_test)
-            print("test_loss", test_loss.item())
+            test_loss = loss_fn(pred_test, y_test).item()
 
-    np.savetxt("pred_train.txt", pred.detach().numpy().reshape((-1, 3600)))
-    pred_test = model(z_test).detach().numpy()
+        dt = time.time() - t0
+        print(f"epoch {epoch}/{n_epochs} | train_loss {train_loss:.6f} | test_loss {test_loss:.6f} | {dt:.1f}s")
+
+        # -------------------------
+        # Save checkpoints (last + best)
+        # -------------------------
+        ckpt = {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optim_state_dict": optim.state_dict(),
+            "train_loss": train_loss,
+            "test_loss": test_loss,
+            "baseline_loss": baseline,
+            # Normalization constants used in this code:
+            "norm": {"logk_center": 4.0, "h_mean": 145.3243, "h_std": 35.5957},
+            # Helpful metadata:
+            "train_file_ids": train_file_ids,
+            "test_file_ids": test_file_ids,
+        }
+
+        torch.save(ckpt, out_dir / "model7_last.pt")
+        if test_loss < best_test:
+            best_test = test_loss
+            torch.save(ckpt, out_dir / "model7_best.pt")
+
+    # -------------------------
+    # Save predictions
+    # -------------------------
+    best = torch.load(out_dir / "model7_best.pt", map_location=device)
+    model.load_state_dict(best["model_state_dict"])
+
+    model.eval()
+    with torch.no_grad():
+        pred_train = model(z).detach().cpu().numpy()
+        pred_test = model(z_test).detach().cpu().numpy()
+
+    np.savetxt("pred_train.txt", pred_train.reshape((-1, 3600)))
     np.savetxt("pred_test.txt", pred_test.reshape((-1, 3600)))
+
+    print("saved:", "pred_train.txt, pred_test.txt, checkpoints/model7_last.pt, checkpoints/model7_best.pt")
