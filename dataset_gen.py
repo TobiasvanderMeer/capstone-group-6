@@ -1,4 +1,4 @@
-from jeffrey_code import hydraulic_conductivity_field, solve_darcy_flow, source_function
+from jeffrey_code_v2 import hydraulic_conductivity_field, solve_darcy_flow, source_function
 import numpy as np
 
 n = 60
