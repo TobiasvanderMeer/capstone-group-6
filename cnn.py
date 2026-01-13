@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
+from utils import load_files
 
 class Model(nn.Module):
     def __init__(self):
@@ -165,15 +166,48 @@ class Model6(nn.Module):
 
 
 class Model7(nn.Module):
+    #best of the powerlayer models
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
         self.fc1 = nn.Linear(3600, 3600)
         self.fc2 = nn.Linear(3600, 3600)
-        self.conv_p1 = nn.Conv2d(2, 8, 9, padding='same')
-        self.conv_p2 = nn.Conv2d(8, 8, 9, padding='same')
-        self.conv_p3 = nn.Conv2d(8, 8, 9, padding='same')
-        self.conv_p4 = nn.Conv2d(8, 1, 9, padding='same')
+        self.conv_p1 = nn.Conv2d(2, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def powerlayer(self, x, h):
+        # h = self.relu(self.fc_p(h))
+        h2 = torch.cat((x, h), dim=1)
+        h2 = self.relu(self.conv_p1(h2))
+        h2 = self.relu(self.conv_p2(h2))
+        h2 = self.relu(self.conv_p3(h2))
+        h2 = self.conv_p4(h2)  # test relu here
+        return h2
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = h.reshape((-1, 1, 60, 60))
+        for _ in range(5):
+            h = self.relu(self.fc2(h.view((-1, 3600)))).view((-1, 1, 60, 60))
+            h = self.powerlayer(x, h)
+        return h.reshape((-1, 60, 60))
+
+
+class Model8(nn.Module):
+    #trains less good than model7, but might get better performance after more epochs
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.fc2 = nn.Linear(3600, 3600)
+        self.conv_p1 = nn.Conv2d(2, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv_p4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+        self.conv_f1 = nn.Conv2d(1, 2, 9, padding='same', padding_mode='replicate')
+        self.conv_f2 = nn.Conv2d(2, 1, 7, padding='same', padding_mode='replicate')
 
     def powerlayer(self, x, h):
         # h = self.relu(self.fc_p(h))
@@ -190,22 +224,127 @@ class Model7(nn.Module):
         for _ in range(5):
             h = self.relu(self.fc2(h.view((-1, 3600)))).view((-1, 1, 60, 60))
             h = self.powerlayer(x, h)
-            #h[:, :, :, 0] = 100
-            #h[:, :, :, -2:] = torch.mean(h[:, :, :, -2:], dim=3, keepdim=True)
-            #h[:, :, -2:, :] = torch.mean(h[:, :, -2:, :], dim=2, keepdim=True)
-            #print(torch.exp(x[:, :, 0, :]+4).shape)
-            #print((torch.tensor([-1, 1])[None, None, :, None]  * -500).shape)
-            #h[:, :, :2, :] = (torch.mean(h[:, :, :2, :], dim=2, keepdim=True) +
-            #                  torch.tensor([-1, 1])[None, None, :, None] * torch.exp(x[:, :, 0, :].reshape((-1, 1, 1, 60))+4) * -500*0.1)
+        h = self.relu(self.conv_f1(h))
+        h = self.conv_f2(h)
         return h.reshape((-1, 60, 60))
 
 
-def load_files(filename: str, file_ids: list[str]):
-    return np.concatenate([np.loadtxt(filename + file_id + ".txt") for file_id in file_ids])
+class Block(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.fc2 = nn.Linear(3600, 3600)
+        self.conv1 = nn.Conv2d(4, 8, 9, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
 
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 4, 60, 60))
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.relu(self.fc1(x.view(-1, 3600))).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.relu(self.fc2(hr.view(-1, 3600)).view(-1, 60, 60))
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.conv4(r)
+        return r
+
+class Model9(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.block_1 = Block()
+        self.block_2 = Block()
+        self.block_3 = Block()
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = h.reshape((-1, 1, 60, 60))
+        h = self.relu(self.block_1(x, h))
+        h = self.relu(self.block_2(x, h))
+        h = self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+class Model10(nn.Module):
+    #trains OK (12 epochs 7600 samples) MAE 5.33788 minor sign of overfitting
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 3600)
+        self.block_1 = Block()
+        self.block_2 = Block()
+        self.block_3 = Block()
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+class Block2(nn.Module):
+    def __init__(self, n_hidden=144):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, 3600)
+        self.fc3 = nn.Linear(3600, n_hidden)
+        self.fc4 = nn.Linear(n_hidden, 3600)
+        self.prep1 = nn.Sequential(self.fc1, self.relu, self.fc2, self.relu)
+        self.prep2 = nn.Sequential(self.fc3, self.relu, self.fc4, self.relu)
+        self.conv1 = nn.Conv2d(4, 8, 9, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(8, 8, 9, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 4, 60, 60))
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.prep2(hr.view(-1, 3600)).view(-1, 60, 60)
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.conv4(r)
+        return r
+
+class Model11(nn.Module):
+    #best so far converges nicely likely better performance with lower learning rate and more epochs no overfitting
+    #(12 epochs 7600 samples) lr 3e-5 MAE 3.893
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 144)
+        self.fc2 = nn.Linear(144, 3600)
+        self.block_1 = Block2(n_hidden=144)
+        self.block_2 = Block2(n_hidden=144)
+        self.block_3 = Block2(n_hidden=225)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+#test fc after conv
 
 if __name__ == "__main__":
     train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
+    #train_file_ids = ["0"]
     test_file_ids = ["_1000to1050", "_1050to1400"]
 
     x = torch.tensor(load_files("datasets/k_set", train_file_ids).reshape((-1, 1, 60, 60)), dtype=torch.float)
@@ -235,9 +374,12 @@ if __name__ == "__main__":
     # -------------------------
     # Model / loss / optimizer
     # -------------------------
-    model = Model7().to(device)
+    model_id = 11
+    model = Model11().to(device)
+    #print([i.numel() for i in model.parameters()])
+
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=1e-4)
+    optim = torch.optim.Adam(model.parameters(), lr=3e-5)
 
     # Baseline (predict mean field from train set)
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
@@ -246,8 +388,8 @@ if __name__ == "__main__":
     # -------------------------
     # Training loop
     # -------------------------
-    n_epochs = 8
-    batch_size = 50
+    n_epochs = 12
+    batch_size = 16
     batch_idx = np.arange(z.shape[0])
 
     # Checkpoint folder
@@ -258,10 +400,8 @@ if __name__ == "__main__":
 
     for epoch in range(1, n_epochs + 1):
         t0 = time.time()
-
         model.train()
         np.random.shuffle(batch_idx)
-
         epoch_losses = []
 
         n_batches = (z.shape[0] - 1) // batch_size + 1
@@ -275,6 +415,7 @@ if __name__ == "__main__":
             optim.step()
             optim.zero_grad()
 
+            print(epoch, i, loss.item())
             epoch_losses.append(loss.item())
 
         train_loss = float(np.mean(epoch_losses))
@@ -304,15 +445,15 @@ if __name__ == "__main__":
             "test_file_ids": test_file_ids,
         }
 
-        torch.save(ckpt, out_dir / "model7_last.pt")
+        torch.save(ckpt, out_dir / f"model{model_id}_last.pt")
         if test_loss < best_test:
             best_test = test_loss
-            torch.save(ckpt, out_dir / "model7_best.pt")
+            torch.save(ckpt, out_dir / f"model{model_id}_best.pt")
 
     # -------------------------
     # Save predictions
     # -------------------------
-    best = torch.load(out_dir / "model7_best.pt", map_location=device)
+    best = torch.load(out_dir / f"model{model_id}_best.pt", map_location=device)
     model.load_state_dict(best["model_state_dict"])
 
     model.eval()
@@ -320,7 +461,8 @@ if __name__ == "__main__":
         pred_train = model(z).detach().cpu().numpy()
         pred_test = model(z_test).detach().cpu().numpy()
 
-    np.savetxt("pred_train.txt", pred_train.reshape((-1, 3600)))
-    np.savetxt("pred_test.txt", pred_test.reshape((-1, 3600)))
+    np.savetxt(f"pred_train{model_id}.txt", pred_train.reshape((-1, 3600)))
+    np.savetxt(f"pred_test{model_id}.txt", pred_test.reshape((-1, 3600)))
 
-    print("saved:", "pred_train.txt, pred_test.txt, checkpoints/model7_last.pt, checkpoints/model7_best.pt")
+    print("saved:", f"pred_train{model_id}.txt, pred_test{model_id}.txt, checkpoints/model{model_id}_last.pt, checkpoints/model{model_id}_best.pt")
+

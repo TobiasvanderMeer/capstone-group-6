@@ -1,13 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # Use the same test split order as cnn.py (edit if your cnn.py uses different test_file_ids)
 # These match the ones from your train_unet.py run
 set_ids = ["_1000to1050", "_1050to1400"]
 
 # Which prediction file to visualize:
 # CHANGED: Pointing to your new U-Net output
-pred_file = "pred_test_unet.txt"
+pred_file = "pred_test11.txt"
 
 # Load and concatenate test sets in the same order
 x = np.concatenate([np.loadtxt(f"datasets/k_set{sid}.txt") for sid in set_ids]).reshape((-1, 60, 60))
