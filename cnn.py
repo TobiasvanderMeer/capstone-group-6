@@ -164,6 +164,7 @@ class Model6(nn.Module):
 
 
 class Model7(nn.Module):
+    #best of the powerlayer models
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -193,6 +194,7 @@ class Model7(nn.Module):
 
 
 class Model8(nn.Module):
+    #trains less good than model7, but might get better performance after more epochs
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
