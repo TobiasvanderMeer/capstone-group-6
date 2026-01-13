@@ -306,7 +306,7 @@ class Block2(nn.Module):
         self.conv4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
 
     def forward(self, x, hr):
-        z = torch.empty((x.shape[0], 4, 60, 60))
+        z = torch.empty((x.shape[0], 4, 60, 60), device=x.device)
         z[:, 0, :, :] = x.view(-1, 60, 60)
         z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
         z[:, 2, :, :] = hr.view(-1, 60, 60)
@@ -321,6 +321,8 @@ class Block2(nn.Module):
 class Model11(nn.Module):
     #best so far converges nicely likely better performance with lower learning rate and more epochs no overfitting
     #(12 epochs 7600 samples) lr 3e-5 MAE 3.893
+
+    #(70 epochs 7600 samples) lr 1e-5 MAE 2.4343
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -379,7 +381,7 @@ if __name__ == "__main__":
     #print([i.numel() for i in model.parameters()])
 
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=3e-5)
+    optim = torch.optim.Adam(model.parameters(), lr=1e-5)
 
     # Baseline (predict mean field from train set)
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
@@ -388,7 +390,7 @@ if __name__ == "__main__":
     # -------------------------
     # Training loop
     # -------------------------
-    n_epochs = 12
+    n_epochs = 70
     batch_size = 16
     batch_idx = np.arange(z.shape[0])
 
@@ -415,7 +417,7 @@ if __name__ == "__main__":
             optim.step()
             optim.zero_grad()
 
-            print(epoch, i, loss.item())
+            #print(epoch, i, loss.item())
             epoch_losses.append(loss.item())
 
         train_loss = float(np.mean(epoch_losses))
@@ -461,7 +463,6 @@ if __name__ == "__main__":
         pred_train = model(z).detach().cpu().numpy()
         pred_test = model(z_test).detach().cpu().numpy()
 
-    np.savetxt(f"pred_train{model_id}.txt", pred_train.reshape((-1, 3600)))
     np.savetxt(f"pred_test{model_id}.txt", pred_test.reshape((-1, 3600)))
 
     print("saved:", f"pred_train{model_id}.txt, pred_test{model_id}.txt, checkpoints/model{model_id}_last.pt, checkpoints/model{model_id}_best.pt")

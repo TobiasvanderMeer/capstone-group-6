@@ -17,11 +17,13 @@ y = np.concatenate([np.loadtxt(f"datasets/h_set{sid}.txt") for sid in set_ids]).
 # Model outputs are normalized (h_norm). Unnormalize back to head units.
 pred = np.loadtxt(pred_file).reshape((-1, 60, 60)) * 37 + 146
 
+print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
 
 n = min(len(x), len(y), len(pred), MAX_PLOTS)
 for i in range(n):
+    print("MAE: ", np.mean(np.abs(y[i] - pred[i])))
     f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4))
 
     # Calculate min/max from the TRUTH so both plots use the same scale
