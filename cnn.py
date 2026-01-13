@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 from utils import load_files
+import matplotlib.pyplot as plt
 
 class Model(nn.Module):
     def __init__(self):
@@ -322,7 +323,7 @@ class Model11(nn.Module):
     #best so far converges nicely likely better performance with lower learning rate and more epochs no overfitting
     #(12 epochs 7600 samples) lr 3e-5 MAE 3.893
 
-    #(70 epochs 7600 samples) lr 1e-5 MAE 2.4343
+    #(100 epochs 7600 samples) lr 1e-5 MAE 2.256    lr 3e-6 is worse
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -340,6 +341,30 @@ class Model11(nn.Module):
         h = h - self.block_1(x, h)
         h = h - self.block_2(x, h)
         h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+
+class Model12(nn.Module):
+    #MAE 2.059 (150 epochs 7600 samples) could improve with more training
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 32)
+        self.fc2 = nn.Linear(32, 3600)
+        self.block_1 = Block2(n_hidden=32)
+        self.block_2 = Block2(n_hidden=64)
+        self.block_3 = Block2(n_hidden=64)
+        self.block_4 = Block2(n_hidden=128)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        h = h - self.block_4(x, h)
         return h.reshape((-1, 60, 60))
 
 #test fc after conv
@@ -373,12 +398,20 @@ if __name__ == "__main__":
     z_test = z_test.to(device)
     y_test = y_test.to(device)
 
+    # Checkpoint folder
+    out_dir = Path("checkpoints")
+    out_dir.mkdir(exist_ok=True)
+
     # -------------------------
     # Model / loss / optimizer
     # -------------------------
-    model_id = 11
-    model = Model11().to(device)
-    #print([i.numel() for i in model.parameters()])
+    model_id = 12
+    model = Model12().to(device)
+    print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
+
+    # continue form existing model
+    best = torch.load(out_dir / f"model{model_id}_best.pt", map_location=device)
+    model.load_state_dict(best["model_state_dict"])
 
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=1e-5)
@@ -390,16 +423,14 @@ if __name__ == "__main__":
     # -------------------------
     # Training loop
     # -------------------------
-    n_epochs = 70
+    n_epochs = 12
     batch_size = 16
     batch_idx = np.arange(z.shape[0])
 
-    # Checkpoint folder
-    out_dir = Path("checkpoints")
-    out_dir.mkdir(exist_ok=True)
-
     best_test = float("inf")
 
+    train_losses = []
+    test_losses = []
     for epoch in range(1, n_epochs + 1):
         t0 = time.time()
         model.train()
@@ -429,6 +460,8 @@ if __name__ == "__main__":
 
         dt = time.time() - t0
         print(f"epoch {epoch}/{n_epochs} | train_loss {train_loss:.6f} | test_loss {test_loss:.6f} | {dt:.1f}s")
+        train_losses.append(train_loss)
+        test_losses.append(test_loss)
 
         # -------------------------
         # Save checkpoints (last + best)
@@ -460,10 +493,15 @@ if __name__ == "__main__":
 
     model.eval()
     with torch.no_grad():
-        pred_train = model(z).detach().cpu().numpy()
         pred_test = model(z_test).detach().cpu().numpy()
 
     np.savetxt(f"pred_test{model_id}.txt", pred_test.reshape((-1, 3600)))
 
     print("saved:", f"pred_train{model_id}.txt, pred_test{model_id}.txt, checkpoints/model{model_id}_last.pt, checkpoints/model{model_id}_best.pt")
 
+    plt.plot(train_losses)
+    plt.plot(test_losses)
+    plt.legend(["train_loss", "test_loss"])
+    print("showing convergence")
+    plt.savefig(f"convergence_plot{model_id}.png")
+    plt.show()
