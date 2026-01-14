@@ -44,6 +44,7 @@ for i in range(n):
     ax3.contour(pred[i], levels=20, colors=["black"], linewidths=0.7)
 
     ax4.imshow(pred[i] - y[i], interpolation='none')
+    #ax4.imshow(np.mean(pred, axis=0) - np.mean(y, axis=0), interpolation='none')
 
     plt.tight_layout()
     plt.show(block=True)

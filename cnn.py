@@ -400,6 +400,7 @@ class Block3(nn.Module):
         self.ff[0, 0, :] = 36.49635
 
     def forward(self, x, hr):
+        # MAE 2.484
         z = torch.empty((x.shape[0], 5, 60, 60), device=x.device)
         z[:, 0, :, :] = x.view(-1, 60, 60)
         z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
@@ -438,6 +439,7 @@ class Model13(nn.Module):
 
 
 class Model14(nn.Module):
+    #does not train
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -461,9 +463,10 @@ class Model14(nn.Module):
         #self.pad15 = nn.ReflectionPad2d(15)
 
     def forward(self, x):
-        h0a = self.conv0(x)
-        h0b = self.fc0(torch.ones((1, 1), device=x.device))
-        h1 = self.relu(self.conv1(torch.concatenate(h0a, h0b)))
+        h0 = torch.empty((x.shape[0], 6, 60, 60), device=x.device)
+        h0[:, :3, :, :] = self.conv0(x)
+        h0[:, 3:, :, :] = self.fc0(torch.ones((1, 1), device=x.device)).view(1, 3, 60, 60)
+        h1 = self.relu(self.conv1(h0))
         h1 = self.relu(self.conv2(h1))
         h1 = self.relu(self.conv3(h1))
         h1 = self.relu(self.conv4(h1))
@@ -473,7 +476,7 @@ class Model14(nn.Module):
         h1 = self.relu(self.conv8(h1))
         h1 = self.relu(self.conv9(h1))
         h1 = self.relu(self.conv10(h1))
-        return h1
+        return h1.view(-1, 60, 60)
 
 #test fc after conv
 
@@ -513,16 +516,16 @@ if __name__ == "__main__":
     # -------------------------
     # Model / loss / optimizer
     # -------------------------
-    model_id = 13
-    model = Model13().to(device)
+    model_id = 14
+    model = Model14().to(device)
     print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
 
     # continue form existing model
-    last = torch.load(out_dir / f"model{model_id}_last.pt", map_location=device)
-    model.load_state_dict(last["model_state_dict"])
+    #last = torch.load(out_dir / f"model{model_id}_last.pt", map_location=device)
+    #model.load_state_dict(last["model_state_dict"])
 
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=3e-6)
+    optim = torch.optim.Adam(model.parameters(), lr=1e-5)
 
     # Baseline (predict mean field from train set)
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
