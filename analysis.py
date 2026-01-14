@@ -8,7 +8,7 @@ set_ids = ["_1000to1050", "_1050to1400"]
 
 # Which prediction file to visualize:
 # CHANGED: Pointing to your new U-Net output
-pred_file = "pred_test12.txt"
+pred_file = "pred_test13.txt"
 
 # Load and concatenate test sets in the same order
 x = np.concatenate([np.loadtxt(f"datasets/k_set{sid}.txt") for sid in set_ids]).reshape((-1, 60, 60))
@@ -24,7 +24,7 @@ MAX_PLOTS = 10
 n = min(len(x), len(y), len(pred), MAX_PLOTS)
 for i in range(n):
     print("MAE: ", np.mean(np.abs(y[i] - pred[i])))
-    f, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(12, 4))
+    f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(12, 4))
 
     # Calculate min/max from the TRUTH so both plots use the same scale
     # This helps you compare them fairly
@@ -42,6 +42,8 @@ for i in range(n):
     # Added vmin/vmax to lock scales
     ax3.imshow(pred[i], interpolation="none", origin="lower", vmin=vmin, vmax=vmax)
     ax3.contour(pred[i], levels=20, colors=["black"], linewidths=0.7)
+
+    ax4.imshow(pred[i] - y[i], interpolation='none')
 
     plt.tight_layout()
     plt.show(block=True)

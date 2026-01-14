@@ -367,6 +367,114 @@ class Model12(nn.Module):
         h = h - self.block_4(x, h)
         return h.reshape((-1, 60, 60))
 
+class BorderPad_h(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size):
+        #first channel must be h
+        super().__init__()
+        self.n_pad = kernel_size//2
+        self.refl_pad = nn.ReflectionPad2d(self.n_pad)
+
+    def forward(self, x):
+        z = self.refl_pad(x)
+        z[:, 0, :, :self.n_pad//2] = (100-146)/37 - z[:, 0, :, :self.n_pad//2]
+
+
+class Block3(nn.Module):
+    def __init__(self, n_hidden=144):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, 3600)
+        self.fc3 = nn.Linear(3600, n_hidden)
+        self.fc4 = nn.Linear(n_hidden, 3600)
+        self.prep1 = nn.Sequential(self.fc1, self.relu, self.fc2, self.relu)
+        self.prep2 = nn.Sequential(self.fc3, self.relu, self.fc4, self.relu)
+        self.refl_pad = nn.ReflectionPad2d(16)
+        self.conv1 = nn.Conv2d(5, 8, 9, padding='valid')
+        self.conv2 = nn.Conv2d(8, 8, 9, padding='valid')
+        self.conv3 = nn.Conv2d(8, 8, 9, padding='valid')
+        self.conv4 = nn.Conv2d(8, 1, 9, padding='valid')
+        self.ff = torch.zeros((1, 60, 60))
+        self.ff[0, :, 41:51] = 0.5
+        self.ff[0, :, 51:] = 1
+        self.ff[0, 0, :] = 36.49635
+
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 5, 60, 60), device=x.device)
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.prep2(hr.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 4, :, :] = self.ff
+
+        z = self.refl_pad(z)
+        z[:, 2, :, :16] = (100-146)/37 - z[:, 2, :, :16]
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.conv4(r)
+        return r
+
+class Model13(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 128)
+        self.fc2 = nn.Linear(128, 3600)
+        self.block_1 = Block3(n_hidden=64)
+        self.block_2 = Block3(n_hidden=32)
+        self.block_3 = Block3(n_hidden=32)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+
+class Model14(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc0 = nn.Linear(1, 3600*3, bias=False)
+        self.conv0 = nn.Conv2d(1, 3, 1, padding='same', padding_mode='reflect')
+        self.conv1 = nn.Conv2d(6, 8, 11, padding='same', padding_mode='reflect')
+        self.conv2 = nn.Conv2d(8, 8, 17, padding='same', padding_mode='reflect')
+        self.conv3 = nn.Conv2d(8, 8, 19, padding='same', padding_mode='reflect')
+        self.conv4 = nn.Conv2d(8, 12, 17, padding='same', padding_mode='reflect')
+        self.conv5 = nn.Conv2d(12, 16, 11, padding='same', padding_mode='reflect')
+        self.conv6 = nn.Conv2d(16, 16, 7, padding='same', padding_mode='reflect')
+        self.conv7 = nn.Conv2d(16, 10, 13, padding='same', padding_mode='reflect')
+        self.conv8 = nn.Conv2d(10, 8, 13, padding='same', padding_mode='reflect')
+        self.conv9 = nn.Conv2d(8, 4, 11, padding='same', padding_mode='reflect')
+        self.conv10 = nn.Conv2d(4, 1, 9, padding='same', padding_mode='reflect')
+
+        #self.pad5 = nn.ReflectionPad2d(5)
+        #self.pad7 = nn.ReflectionPad2d(7)
+        #self.pad9 = nn.ReflectionPad2d(9)
+        #self.pad11 = nn.ReflectionPad2d(11)
+        #self.pad15 = nn.ReflectionPad2d(15)
+
+    def forward(self, x):
+        h0a = self.conv0(x)
+        h0b = self.fc0(torch.ones((1, 1), device=x.device))
+        h1 = self.relu(self.conv1(torch.concatenate(h0a, h0b)))
+        h1 = self.relu(self.conv2(h1))
+        h1 = self.relu(self.conv3(h1))
+        h1 = self.relu(self.conv4(h1))
+        h1 = self.relu(self.conv5(h1))
+        h1 = self.relu(self.conv6(h1))
+        h1 = self.relu(self.conv7(h1))
+        h1 = self.relu(self.conv8(h1))
+        h1 = self.relu(self.conv9(h1))
+        h1 = self.relu(self.conv10(h1))
+        return h1
+
 #test fc after conv
 
 if __name__ == "__main__":
@@ -405,16 +513,16 @@ if __name__ == "__main__":
     # -------------------------
     # Model / loss / optimizer
     # -------------------------
-    model_id = 12
-    model = Model12().to(device)
+    model_id = 13
+    model = Model13().to(device)
     print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
 
     # continue form existing model
-    best = torch.load(out_dir / f"model{model_id}_best.pt", map_location=device)
-    model.load_state_dict(best["model_state_dict"])
+    last = torch.load(out_dir / f"model{model_id}_last.pt", map_location=device)
+    model.load_state_dict(last["model_state_dict"])
 
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=1e-5)
+    optim = torch.optim.Adam(model.parameters(), lr=3e-6)
 
     # Baseline (predict mean field from train set)
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
