@@ -7,8 +7,7 @@ import matplotlib.pyplot as plt
 set_ids = ["_1000to1050", "_1050to1400"]
 
 # Which prediction file to visualize:
-# CHANGED: Pointing to your new U-Net output
-pred_file = "pred_test13.txt"
+pred_file = "pred_test12.txt"
 
 # Load and concatenate test sets in the same order
 x = np.concatenate([np.loadtxt(f"datasets/k_set{sid}.txt") for sid in set_ids]).reshape((-1, 60, 60))
@@ -43,7 +42,7 @@ for i in range(n):
     ax3.imshow(pred[i], interpolation="none", origin="lower", vmin=vmin, vmax=vmax)
     ax3.contour(pred[i], levels=20, colors=["black"], linewidths=0.7)
 
-    ax4.imshow(pred[i] - y[i], interpolation='none')
+    ax4.imshow(pred[i] - y[i], interpolation='none', origin="lower")
     #ax4.imshow(np.mean(pred, axis=0) - np.mean(y, axis=0), interpolation='none')
 
     plt.tight_layout()

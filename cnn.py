@@ -367,6 +367,61 @@ class Model12(nn.Module):
         h = h - self.block_4(x, h)
         return h.reshape((-1, 60, 60))
 
+class Block2b(nn.Module):
+    def __init__(self, n_hidden=144):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, 3600)
+        self.fc3 = nn.Linear(3600, n_hidden)
+        self.fc4 = nn.Linear(n_hidden, 3600)
+        self.prep1 = nn.Sequential(self.fc1, self.relu, self.fc2, self.relu)
+        self.prep2 = nn.Sequential(self.fc3, self.relu, self.fc4, self.relu)
+        self.conv1 = nn.Conv2d(4, 16, 9, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(16, 64, 9, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(64, 64, 9, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(64, 8, 9, padding='same', padding_mode='zeros')
+        self.conv5 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 4, 60, 60), device=x.device)
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.prep2(hr.view(-1, 3600)).view(-1, 60, 60)
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.relu(self.conv4(r))
+        r = self.conv5(r)
+        return r
+
+
+class Model12b(nn.Module):
+    #first 30 epochs at lr 1e-5, then 30 at 3e-6
+    #MAE 2.1407
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 128)
+        self.fc2 = nn.Linear(128, 3600)
+        self.block_1 = Block2b(n_hidden=128)
+        self.block_2 = Block2b(n_hidden=64)
+        self.block_3 = Block2b(n_hidden=64)
+        self.block_4 = Block2b(n_hidden=32)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        h = h - self.block_4(x, h)
+        return h.reshape((-1, 60, 60))
+
 class BorderPad_h(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size):
         #first channel must be h
@@ -418,6 +473,7 @@ class Block3(nn.Module):
         return r
 
 class Model13(nn.Module):
+    #200 epochs lr 8e-6 MAE 2.110
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -516,16 +572,16 @@ if __name__ == "__main__":
     # -------------------------
     # Model / loss / optimizer
     # -------------------------
-    model_id = 14
-    model = Model14().to(device)
+    model_id = "12"
+    model = Model12().to(device)
     print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
 
     # continue form existing model
-    #last = torch.load(out_dir / f"model{model_id}_last.pt", map_location=device)
-    #model.load_state_dict(last["model_state_dict"])
+    last = torch.load(out_dir / f"model{model_id}_last.pt", map_location=device)
+    model.load_state_dict(last["model_state_dict"])
 
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=1e-5)
+    optim = torch.optim.Adam(model.parameters(), lr=8e-6)
 
     # Baseline (predict mean field from train set)
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
@@ -534,7 +590,7 @@ if __name__ == "__main__":
     # -------------------------
     # Training loop
     # -------------------------
-    n_epochs = 12
+    n_epochs = 360
     batch_size = 16
     batch_idx = np.arange(z.shape[0])
 
