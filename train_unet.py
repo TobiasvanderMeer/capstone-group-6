@@ -24,7 +24,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.cuda.amp import autocast, GradScaler  # still works; GradScaler auto-disables on CPU
-
+import torch.nn.functional as F
 from unet import UNet60
 
 # -----------------------------
@@ -59,31 +59,54 @@ SEED = 0
 # Physics-informed loss
 # -----------------------------
 def physics_informed_loss(pred: torch.Tensor, y_true: torch.Tensor, k: torch.Tensor, lambda_phy: float = 0.1) -> torch.Tensor:
-    """Physics-informed loss combining MSE and Darcy residual"""
-    data_loss = nn.functional.mse_loss(pred, y_true)
-
+    """
+    Fast physics-informed loss for Darcy flow on CPU.
+    Uses convolutions for derivatives but simple neighbor averaging for k.
+    
+    pred: (B, H, W)
+    y_true: (B, H, W)
+    k: (B, 1, H, W)
+    """
+    # Data loss
+    data_loss = F.mse_loss(pred, y_true)
+    
+    # Prepare
     B, H, W = pred.shape
-    dx = dy = 1.0
+    pred = pred.unsqueeze(1)  # (B,1,H,W)
+    device = pred.device
 
-    pred_pad = nn.functional.pad(pred.unsqueeze(1), (1,1,1,1), mode='replicate')
-    k_pad = nn.functional.pad(k, (1,1,1,1), mode='replicate')
+    # Finite difference kernels
+    dx_kernel = torch.tensor([[0, 0, 0],
+                              [-0.5, 0, 0.5],
+                              [0, 0, 0]], dtype=torch.float32, device=device).view(1,1,3,3)
+    dy_kernel = torch.tensor([[0, -0.5, 0],
+                              [0, 0, 0],
+                              [0, 0.5, 0]], dtype=torch.float32, device=device).view(1,1,3,3)
 
-    dh_dx = (pred_pad[:,:,1:-1,2:] - pred_pad[:,:,1:-1,:-2]) / (2*dx)
-    dh_dy = (pred_pad[:,:,2:,1:-1] - pred_pad[:,:, :-2,1:-1]) / (2*dy)
+    # Compute head gradients
+    dh_dx = F.conv2d(pred, dx_kernel, padding=1)
+    dh_dy = F.conv2d(pred, dy_kernel, padding=1)
 
-    k_center = k_pad[:,:,1:-1,1:-1]
-    k_dx = (k_pad[:,:,1:-1,2:] + k_center)/2
-    k_dy = (k_pad[:,:,2:,1:-1] + k_center)/2
-
+    # Simple neighbor averaging for k at faces
+    k_center = k
+    k_pad = F.pad(k_center, (0,1,0,0), mode='replicate')  # pad right
+    k_dx = 0.5 * (k_center + k_pad[:, :, :, 1:])           # (B,1,H,W)
+    
+    k_pad = F.pad(k_center, (0,0,0,1), mode='replicate')  # pad bottom
+    k_dy = 0.5 * (k_center + k_pad[:, :, 1:, :])          # (B,1,H,W)
+    
+    # Flux
     flux_x = k_dx * dh_dx
     flux_y = k_dy * dh_dy
 
-    flux_x_pad = nn.functional.pad(flux_x, (1,1,0,0), mode='replicate')
-    flux_y_pad = nn.functional.pad(flux_y, (0,0,1,1), mode='replicate')
-    div = (flux_x_pad[:,:,:,2:] - flux_x_pad[:,:,:,:-2]) / (2*dx) + \
-          (flux_y_pad[:,:,2:,:] - flux_y_pad[:,:,:-2,:]) / (2*dy)
+    # Divergence (same conv kernels)
+    div_x = F.conv2d(flux_x, dx_kernel, padding=1)
+    div_y = F.conv2d(flux_y, dy_kernel, padding=1)
+    div = div_x + div_y
 
+    # Physics loss
     physics_loss = torch.mean(div**2)
+
     return data_loss + lambda_phy * physics_loss
 
 # -----------------------------
