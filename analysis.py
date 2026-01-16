@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 set_ids = ["_1000to1050", "_1050to1400"]
 
 # Which prediction file to visualize:
-pred_file = "pred_test12c.txt"
+model_id = "fc1"
+pred_file = f"models/{model_id}/pred_test.txt"
 
 # Load and concatenate test sets in the same order
 x = np.concatenate([np.loadtxt(f"datasets/k_set{sid}.txt") for sid in set_ids]).reshape((-1, 60, 60))

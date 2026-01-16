@@ -44,7 +44,8 @@ DATASET_DIR = "datasets"
 SET_IDS = ["_1000to1050", "_1050to1400"]
 
 # Prediction file from train_unet.py export
-PRED_FILE = "pred_test13.txt"
+model_id = "fc1"
+PRED_FILE = f"models/{model_id}/pred_test.txt"
 
 # Grid (same as jeffrey_code.py)
 N = 60
