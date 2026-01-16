@@ -2,8 +2,8 @@ import torch
 from torch import nn
 
 train_mode = 'default'
-epochs = 50
-lr = 8e-4
+epochs = 100
+lr = 2e-4
 
 class Model(nn.Module):
     def __init__(self):

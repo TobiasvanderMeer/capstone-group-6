@@ -5,9 +5,11 @@ import torch
 from torch import nn
 from utils import load_files
 import matplotlib.pyplot as plt
+import importlib
 
-model_id = "fc1"
-import models.fc1.model as model_file
+model_id = "fc1"  # change this to change different models
+
+model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
 
 def default_train(n_epochs, lr):
