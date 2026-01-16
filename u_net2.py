@@ -42,10 +42,6 @@ class CenterBlock(nn.Module):
         return x
 
 class UNet2(nn.Module):
-    """
-    U-Net specifically for 60x60 grid.
-    Includes the 'Global Brain' fix in the bottleneck to catch that linear gradient.
-    """
 
     #doesn't train
 
