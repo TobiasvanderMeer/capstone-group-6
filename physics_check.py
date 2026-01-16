@@ -44,7 +44,7 @@ DATASET_DIR = "datasets"
 SET_IDS = ["_1000to1050", "_1050to1400"]
 
 # Prediction file from train_unet.py export
-PRED_FILE = "pred_test_unet.txt"
+PRED_FILE = "pred_test13.txt"
 
 # Grid (same as jeffrey_code.py)
 N = 60
@@ -53,8 +53,8 @@ DX = L / (N - 1)
 
 # Your updated normalization (you said you retrained with these)
 PRED_IS_NORMALIZED = True
-H_MEAN = 145.3243
-H_STD = 35.5957
+H_MEAN = 146
+H_STD = 37
 
 # How many samples for heavy checks (A build + sparse solve)
 N_RESIDUAL_SAMPLES = 30

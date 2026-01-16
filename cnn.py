@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 from utils import load_files
+import matplotlib.pyplot as plt
 
 class Model(nn.Module):
     def __init__(self):
@@ -147,7 +148,7 @@ class Block2(nn.Module):
         self.conv4 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
 
     def forward(self, x, hr):
-        z = torch.empty((x.shape[0], 4, 60, 60))
+        z = torch.empty((x.shape[0], 4, 60, 60), device=x.device)
         z[:, 0, :, :] = x.view(-1, 60, 60)
         z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
         z[:, 2, :, :] = hr.view(-1, 60, 60)
@@ -162,6 +163,8 @@ class Block2(nn.Module):
 class Model11(nn.Module):
     #best so far converges nicely likely better performance with lower learning rate and more epochs no overfitting
     #(12 epochs 7600 samples) lr 3e-5 MAE 3.893
+
+    #(100 epochs 7600 samples) lr 1e-5 MAE 2.256    lr 3e-6 is worse
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
@@ -180,6 +183,282 @@ class Model11(nn.Module):
         h = h - self.block_2(x, h)
         h = h - self.block_3(x, h)
         return h.reshape((-1, 60, 60))
+
+
+class Model12(nn.Module):
+    #MAE 2.059 (150 epochs 7600 samples) could improve with more training
+    # another 360 epochs at lr 8e-6 gets it to MAE 1.780
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 32)
+        self.fc2 = nn.Linear(32, 3600)
+        self.block_1 = Block2(n_hidden=32)
+        self.block_2 = Block2(n_hidden=64)
+        self.block_3 = Block2(n_hidden=64)
+        self.block_4 = Block2(n_hidden=128)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        h = h - self.block_4(x, h)
+        return h.reshape((-1, 60, 60))
+
+class Model12c(nn.Module):
+    #MAE 2.030 after 200 epoch
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 128)
+        self.fc2 = nn.Linear(128, 3600)
+        self.block_1 = Block2(n_hidden=128)
+        self.block_2 = Block2(n_hidden=64)
+        self.block_3 = Block2(n_hidden=32)
+        self.block_4 = Block2(n_hidden=32)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        h = h - self.block_4(x, h)
+        return h.reshape((-1, 60, 60))
+
+class Block2b(nn.Module):
+    def __init__(self, n_hidden=144):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, 3600)
+        self.fc3 = nn.Linear(3600, n_hidden)
+        self.fc4 = nn.Linear(n_hidden, 3600)
+        self.prep1 = nn.Sequential(self.fc1, self.relu, self.fc2, self.relu)
+        self.prep2 = nn.Sequential(self.fc3, self.relu, self.fc4, self.relu)
+        self.conv1 = nn.Conv2d(4, 16, 9, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(16, 64, 9, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(64, 64, 9, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(64, 8, 9, padding='same', padding_mode='zeros')
+        self.conv5 = nn.Conv2d(8, 1, 9, padding='same', padding_mode='zeros')
+
+    def forward(self, x, hr):
+        z = torch.empty((x.shape[0], 4, 60, 60), device=x.device)
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.prep2(hr.view(-1, 3600)).view(-1, 60, 60)
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.relu(self.conv4(r))
+        r = self.conv5(r)
+        return r
+
+
+class Model12b(nn.Module):
+    #first 30 epochs at lr 1e-5, then 30 at 3e-6
+    #MAE 2.1407
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 128)
+        self.fc2 = nn.Linear(128, 3600)
+        self.block_1 = Block2b(n_hidden=128)
+        self.block_2 = Block2b(n_hidden=64)
+        self.block_3 = Block2b(n_hidden=64)
+        self.block_4 = Block2b(n_hidden=32)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        h = h - self.block_4(x, h)
+        return h.reshape((-1, 60, 60))
+
+class BorderPad_h(nn.Module):
+    def __init__(self, in_channels, out_channels, kernel_size):
+        #first channel must be h
+        super().__init__()
+        self.n_pad = kernel_size//2
+        self.refl_pad = nn.ReflectionPad2d(self.n_pad)
+
+    def forward(self, x):
+        z = self.refl_pad(x)
+        z[:, 0, :, :self.n_pad//2] = (100-146)/37 - z[:, 0, :, :self.n_pad//2]
+
+
+class Block3(nn.Module):
+    def __init__(self, n_hidden=144):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, n_hidden)
+        self.fc2 = nn.Linear(n_hidden, 3600)
+        self.fc3 = nn.Linear(3600, n_hidden)
+        self.fc4 = nn.Linear(n_hidden, 3600)
+        self.prep1 = nn.Sequential(self.fc1, self.relu, self.fc2, self.relu)
+        self.prep2 = nn.Sequential(self.fc3, self.relu, self.fc4, self.relu)
+        self.refl_pad = nn.ReflectionPad2d(16)
+        self.conv1 = nn.Conv2d(5, 8, 9, padding='valid')
+        self.conv2 = nn.Conv2d(8, 8, 9, padding='valid')
+        self.conv3 = nn.Conv2d(8, 8, 9, padding='valid')
+        self.conv4 = nn.Conv2d(8, 1, 9, padding='valid')
+        self.ff = torch.zeros((1, 60, 60))
+        self.ff[0, :, 41:51] = 0.5
+        self.ff[0, :, 51:] = 1
+        self.ff[0, 0, :] = 36.49635
+
+    def forward(self, x, hr):
+        # MAE 2.484
+        z = torch.empty((x.shape[0], 5, 60, 60), device=x.device)
+        z[:, 0, :, :] = x.view(-1, 60, 60)
+        z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 2, :, :] = hr.view(-1, 60, 60)
+        z[:, 3, :, :] = self.prep2(hr.view(-1, 3600)).view(-1, 60, 60)
+        z[:, 4, :, :] = self.ff
+
+        z = self.refl_pad(z)
+        z[:, 2, :, :16] = (100-146)/37 - z[:, 2, :, :16]
+
+        r = self.relu(self.conv1(z))
+        r = self.relu(self.conv2(r))
+        r = self.relu(self.conv3(r))
+        r = self.conv4(r)
+        return r
+
+class Model13(nn.Module):
+    #200 epochs lr 8e-6 MAE 2.110
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.fc1 = nn.Linear(3600, 128)
+        self.fc2 = nn.Linear(128, 3600)
+        self.block_1 = Block3(n_hidden=64)
+        self.block_2 = Block3(n_hidden=32)
+        self.block_3 = Block3(n_hidden=32)
+
+
+    def forward(self, x):
+        h = self.relu(self.fc1(x.reshape((-1, 3600))))
+        h = self.relu(self.fc2(h))
+        h = h.reshape((-1, 1, 60, 60))
+        h = h - self.block_1(x, h)
+        h = h - self.block_2(x, h)
+        h = h - self.block_3(x, h)
+        return h.reshape((-1, 60, 60))
+
+
+class Model14(nn.Module):
+    #trained very poorly at 60 epochs lr 1e-6 and 60 at lr 1e-5
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.conv1 = nn.Conv2d(1, 6, 11, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(6, 8, 17, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(8, 8, 19, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(8, 12, 17, padding='same', padding_mode='reflect')
+        self.conv5 = nn.Conv2d(12, 16, 11, padding='same', padding_mode='reflect')
+        self.conv6 = nn.Conv2d(16, 16, 7, padding='same', padding_mode='zeros')
+        self.conv7 = nn.Conv2d(16, 10, 13, padding='same', padding_mode='reflect')
+        self.conv8 = nn.Conv2d(10, 8, 13, padding='same', padding_mode='reflect')
+        self.conv9 = nn.Conv2d(8, 4, 11, padding='same', padding_mode='reflect')
+        self.conv10 = nn.Conv2d(4, 1, 9, padding='same', padding_mode='reflect')
+
+    def forward(self, x):
+        h1 = self.relu(self.conv1(x))
+        h1 = self.relu(self.conv2(h1))
+        h1 = self.relu(self.conv3(h1))
+        h1 = self.relu(self.conv4(h1))
+        h1 = self.relu(self.conv5(h1))
+        h1 = self.relu(self.conv6(h1))
+        h1 = self.relu(self.conv7(h1))
+        h1 = self.relu(self.conv8(h1))
+        h1 = self.relu(self.conv9(h1))
+        h1 = self.relu(self.conv10(h1))
+        return h1.view(-1, 60, 60)
+
+class Model15(nn.Module):
+    #very bad trained at lr 1e-4
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.conv1 = nn.Conv2d(1, 8, 11, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(8, 16, 17, padding='same', padding_mode='zeros')
+        self.conv3 = nn.Conv2d(16, 32, 19, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(32, 48, 17, padding='same', padding_mode='reflect')
+        self.conv5 = nn.Conv2d(48, 64, 11, padding='same', padding_mode='reflect')
+        self.conv6 = nn.Conv2d(64, 64, 7, padding='same', padding_mode='zeros')
+        self.conv7 = nn.Conv2d(64, 48, 13, padding='same', padding_mode='reflect')
+        self.conv8 = nn.Conv2d(48, 32, 13, padding='same', padding_mode='reflect')
+        self.conv9 = nn.Conv2d(32, 16, 11, padding='same', padding_mode='reflect')
+        self.conv10 = nn.Conv2d(16, 1, 9, padding='same', padding_mode='reflect')
+
+    def forward(self, x):
+        h1 = self.relu(self.conv1(x))
+        h1 = self.relu(self.conv2(h1))
+        h1 = self.relu(self.conv3(h1))
+        h2 = self.relu(self.conv4(h1))
+        h2 = self.relu(self.conv5(h2))
+        h2 = self.relu(self.conv6(h2))
+        h2 = self.relu(self.conv7(h2))
+        h2 = self.relu(self.conv8(h2)) + h1
+        h2 = self.relu(self.conv9(h2))
+        h2 = self.relu(self.conv10(h2))
+        return h2.view(-1, 60, 60)
+
+
+class Model16(nn.Module):
+    # her I added residual connection to improve training. The model converges faster than model15 but still very bad
+    # performance. Also takes much longer to train (48 seconds per epoch)
+    def __init__(self):
+        super().__init__()
+        self.relu = nn.ReLU()
+        self.conv1 = nn.Conv2d(1, 8, 11, padding='same', padding_mode='zeros')
+        self.conv2 = nn.Conv2d(8, 16, 11, padding='same', padding_mode='zeros')
+
+        self.conv3 = nn.Conv2d(16, 16, 19, padding='same', padding_mode='zeros')
+        self.conv4 = nn.Conv2d(16, 16, 19, padding='same', padding_mode='reflect')
+        self.conv5 = nn.Conv2d(16, 16, 19, padding='same', padding_mode='reflect')
+
+        self.conv6 = nn.Conv2d(16, 16, 13, padding='same', padding_mode='zeros')
+        self.conv7 = nn.Conv2d(16, 16, 13, padding='same', padding_mode='reflect')
+        self.conv8 = nn.Conv2d(16, 16, 13, padding='same', padding_mode='reflect')
+
+        self.conv9 = nn.Conv2d(16, 16, 9, padding='same', padding_mode='zeros')
+        self.conv10 = nn.Conv2d(16, 16, 9, padding='same', padding_mode='zeros')
+        self.conv11 = nn.Conv2d(16, 16, 9, padding='same', padding_mode='zeros')
+
+        self.conv12 = nn.Conv2d(16, 1, 7, padding='same', padding_mode='reflect')
+
+    def forward(self, x):
+        h1 = self.relu(self.conv1(x))
+        h1 = self.relu(self.conv2(h1))
+
+        h2 = self.relu(self.conv3(h1))
+        h2 = self.relu(self.conv4(h2))
+        h2 = self.relu(self.conv5(h2)) + h1
+
+        h3 = self.relu(self.conv6(h2))
+        h3 = self.relu(self.conv7(h3))
+        h3 = self.relu(self.conv8(h3)) + h2
+
+        h4 = self.relu(self.conv9(h3))
+        h4 = self.relu(self.conv10(h4))
+        h4 = self.relu(self.conv11(h4)) + h3
+
+        h5 = self.relu(self.conv12(h4))
+        return h5.view(-1, 60, 60)
 
 #test fc after conv
 
@@ -212,15 +491,23 @@ if __name__ == "__main__":
     z_test = z_test.to(device)
     y_test = y_test.to(device)
 
+    # Checkpoint folder
+    out_dir = Path("checkpoints")
+    out_dir.mkdir(exist_ok=True)
+
     # -------------------------
     # Model / loss / optimizer
     # -------------------------
-    model_id = 11
-    model = Model11().to(device)
-    #print([i.numel() for i in model.parameters()])
+    model_id = "12c2"
+    model = Model12c().to(device)
+    print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
+
+    # continue form existing model
+    #last = torch.load(out_dir / f"model{model_id}_last.pt", map_location=device)
+    #model.load_state_dict(last["model_state_dict"])
 
     loss_fn = nn.MSELoss()
-    optim = torch.optim.Adam(model.parameters(), lr=3e-5)
+    optim = torch.optim.Adam(model.parameters(), lr=4e-5)
 
     # Baseline (predict mean field from train set)
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
@@ -229,16 +516,14 @@ if __name__ == "__main__":
     # -------------------------
     # Training loop
     # -------------------------
-    n_epochs = 12
+    n_epochs = 200
     batch_size = 16
     batch_idx = np.arange(z.shape[0])
 
-    # Checkpoint folder
-    out_dir = Path("checkpoints")
-    out_dir.mkdir(exist_ok=True)
-
     best_test = float("inf")
 
+    train_losses = []
+    test_losses = []
     for epoch in range(1, n_epochs + 1):
         t0 = time.time()
         model.train()
@@ -256,7 +541,7 @@ if __name__ == "__main__":
             optim.step()
             optim.zero_grad()
 
-            print(epoch, i, loss.item())
+            #print(epoch, i, loss.item())
             epoch_losses.append(loss.item())
 
         train_loss = float(np.mean(epoch_losses))
@@ -268,6 +553,8 @@ if __name__ == "__main__":
 
         dt = time.time() - t0
         print(f"epoch {epoch}/{n_epochs} | train_loss {train_loss:.6f} | test_loss {test_loss:.6f} | {dt:.1f}s")
+        train_losses.append(train_loss)
+        test_losses.append(test_loss)
 
         # -------------------------
         # Save checkpoints (last + best)
@@ -299,11 +586,15 @@ if __name__ == "__main__":
 
     model.eval()
     with torch.no_grad():
-        pred_train = model(z).detach().cpu().numpy()
         pred_test = model(z_test).detach().cpu().numpy()
 
-    np.savetxt(f"pred_train{model_id}.txt", pred_train.reshape((-1, 3600)))
     np.savetxt(f"pred_test{model_id}.txt", pred_test.reshape((-1, 3600)))
 
     print("saved:", f"pred_train{model_id}.txt, pred_test{model_id}.txt, checkpoints/model{model_id}_last.pt, checkpoints/model{model_id}_best.pt")
 
+    plt.plot(train_losses)
+    plt.plot(test_losses)
+    plt.legend(["train_loss", "test_loss"])
+    print("showing convergence")
+    plt.savefig(f"convergence_plot{model_id}.png")
+    plt.show()
