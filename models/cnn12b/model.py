@@ -59,3 +59,8 @@ class Model(nn.Module):
         h = h - self.block_3(x, h)
         h = h - self.block_4(x, h)
         return h.reshape((-1, 60, 60))
+
+def custom_train():
+    # you need to put your custom training code here if the flag training mode is set to custom
+    print("Custom training not supported")
+    return

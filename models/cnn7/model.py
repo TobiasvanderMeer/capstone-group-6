@@ -33,3 +33,8 @@ class Model(nn.Module):
             h = self.relu(self.fc2(h.view((-1, 3600)))).view((-1, 1, 60, 60))
             h = self.powerlayer(x, h)
         return h.reshape((-1, 60, 60))
+
+def custom_train():
+    # you need to put your custom training code here if the flag training mode is set to custom
+    print("Custom training not supported")
+    return

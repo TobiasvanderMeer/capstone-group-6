@@ -33,3 +33,8 @@ class Model(nn.Module):
         h1 = self.relu(self.conv9(h1))
         h1 = self.relu(self.conv10(h1))
         return h1.view(-1, 60, 60)
+
+def custom_train():
+    # you need to put your custom training code here if the flag training mode is set to custom
+    print("Custom training not supported")
+    return

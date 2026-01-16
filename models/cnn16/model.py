@@ -46,3 +46,8 @@ class Model(nn.Module):
 
         h5 = self.relu(self.conv12(h4))
         return h5.view(-1, 60, 60)
+
+def custom_train():
+    # you need to put your custom training code here if the flag training mode is set to custom
+    print("Custom training not supported")
+    return

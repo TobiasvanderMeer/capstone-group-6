@@ -25,6 +25,6 @@ class Model(nn.Module):
         return x.reshape((-1, 60, 60))
 
 def custom_train():
-    # you can need to put your custom training code here if the flag training mode is set to custom
+    # you need to put your custom training code here if the flag training mode is set to custom
     print("Custom training not supported")
     return
