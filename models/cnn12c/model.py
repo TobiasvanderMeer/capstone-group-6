@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 train_mode = 'default'
-epochs = 5
+epochs = 1440
 lr = 8e-6
 
 

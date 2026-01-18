@@ -2,8 +2,8 @@ import torch
 from torch import nn
 
 train_mode = 'default'
-epochs = 5
-lr = 8e-6
+epochs = 200
+lr = 3e-6
 
 class Block3(nn.Module):
     def __init__(self, n_hidden=144):

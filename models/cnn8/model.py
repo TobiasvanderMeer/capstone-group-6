@@ -2,8 +2,8 @@ import torch
 from torch import nn
 
 train_mode = 'default'
-epochs = 5
-lr = 8e-6
+epochs = 50
+lr = 4e-5
 
 class Model(nn.Module):
     #trains less good than model7, but might get better performance after more epochs

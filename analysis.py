@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 set_ids = ["_1000to1050", "_1050to1400"]
 
 # Which prediction file to visualize:
-model_id = "fc1"
+model_id = "cnn12c"
 pred_file = f"models/{model_id}/pred_test.txt"
 
 # Load and concatenate test sets in the same order
@@ -21,8 +21,20 @@ print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
 
+
 n = min(len(x), len(y), len(pred), MAX_PLOTS)
-for i in range(n):
+
+if False:
+    # show the samples in order of decreasing MAE
+    MAEs = np.mean(np.abs(y-pred), axis=(1, 2))
+    #plt.plot(MAEs, "o")
+    #plt.show()
+    order = [list(MAEs).index(i) for i in sorted(list(MAEs), reverse=True)]
+else:
+    order = range(n)
+
+
+for i in order:
     print("MAE: ", np.mean(np.abs(y[i] - pred[i])))
     f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(12, 4))
 
@@ -30,6 +42,7 @@ for i in range(n):
     # This helps you compare them fairly
     vmin, vmax = np.min(y[i]), np.max(y[i])
 
+    #todo: add color bar
     ax1.set_title("log(K)")
     ax1.imshow(np.log(x[i]), origin="lower")
 

@@ -7,10 +7,14 @@ from utils import load_files
 import matplotlib.pyplot as plt
 import importlib
 
-model_id = "fc1"  # change this to change different models
+model_id = "cnn12c"  # change this to change different models
 
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
+#TODO:  print total time that elapsed during training
+#       save printed output in a text file in the folder
+#       fix the convergence plot when you continue training from a saved model and generaly improve this feature
+#       for each training to not overwrite the previous but save with training parameters in filename
 
 def default_train(n_epochs, lr):
     train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
