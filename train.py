@@ -7,16 +7,18 @@ from utils import load_files
 import matplotlib.pyplot as plt
 import importlib
 
-model_id = "cnn12c"  # change this to change different models
+#the code is this file is used to train all the models. Please be careful when modifying this code to ensure backwards
+#compatibility
+
+model_id = "cnn12"  # change this to change different models
 
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
 #TODO:  print total time that elapsed during training
 #       save printed output in a text file in the folder
 #       fix the convergence plot when you continue training from a saved model and generaly improve this feature
-#       for each training to not overwrite the previous but save with training parameters in filename
 
-def default_train(n_epochs, lr):
+def default_train(n_epochs, lr, postfix):
     train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
     #train_file_ids = ["0"]
     test_file_ids = ["_1000to1050", "_1050to1400"]
@@ -120,42 +122,64 @@ def default_train(n_epochs, lr):
             "test_loss": test_loss,
             "baseline_loss": baseline,
             # Normalization constants used in this code:
-            "norm": {"logk_center": 4.0, "h_mean": 145.3243, "h_std": 35.5957},
+            "norm": {"logk_center": 4.0, "h_mean": 145.3243, "h_std": 35.5957},  # TODO this is not equal for all models
             # Helpful metadata:
             "train_file_ids": train_file_ids,
             "test_file_ids": test_file_ids,
         }
 
-        torch.save(ckpt, out_dir / f"model_last.pt")
+        torch.save(ckpt, out_dir / f"model_last{postfix}.pt")
         if test_loss < best_test:
             best_test = test_loss
-            torch.save(ckpt, out_dir / f"model_best.pt")
+            torch.save(ckpt, out_dir / f"model_best{postfix}.pt")
 
     # -------------------------
     # Save predictions
     # -------------------------
-    best = torch.load(out_dir / f"model_best.pt", map_location=device)
+    best = torch.load(out_dir / f"model_best{postfix}.pt", map_location=device)
     model.load_state_dict(best["model_state_dict"])
 
     model.eval()
     with torch.no_grad():
         pred_test = model(z_test).detach().cpu().numpy()
 
-    np.savetxt(out_dir / "pred_test.txt", pred_test.reshape((-1, 3600)))
+    np.savetxt(out_dir / f"pred_test{postfix}.txt", pred_test.reshape((-1, 3600)))
 
-    print("saved:", f"pred_test.txt, checkpoints/model_last.pt, checkpoints/model_best.pt")
+    print("saved:", f"pred_test{postfix}.txt, model_last{postfix}.pt, model_best.pt{postfix}")
 
     plt.plot(train_losses)
     plt.plot(test_losses)
     plt.legend(["train_loss", "test_loss"])
     print("showing convergence")
-    plt.savefig(out_dir /  "convergence_plot.png")
+    plt.savefig(out_dir /  f"convergence_plot{postfix}.png")
     plt.show()
 
 if __name__ == "__main__":
+    #each model needs a variable called "training mode" this variable determines wha code is used to train the model
     train_mode = model_file.train_mode
     if train_mode == 'default':
+        #this training mode uses the variables "lr" and "epochs". This on should not be used and is only included for
+        #backwards compatibility
         print("Using default training code to train", model_id)
-        default_train(model_file.epochs, model_file.lr)
+        print("please use default2 instead because default is outdated")
+        default_train(model_file.epochs, model_file.lr, "")
+
+    elif train_mode == 'default2':
+        #this training mode uses the dictionary "training_settings" to store the training parameters.
+        #this allows optional settings.
+        print("Using default2 training code to train", model_id)
+        epochs = model_file.training_settings["epochs"]
+        lr = model_file.training_settings["lr"]
+        if "postfix" in model_file.training_settings:
+            postfix = model_file.training_settings["postfix"]
+        else:
+            postfix = ""
+        print(f"lr: {lr}, n_epochs: {epochs}, postfix: \"{postfix}\"")
+        default_train(epochs, lr, postfix)
+
     elif train_mode == 'custom':
+        #for training algorithms that are specific to one model, please add the training code in the model file.
+        #this one is not used (yet) so you can change the code without worrying about backwards compatibility too much
         model_file.custom_train()
+    else:
+        print(f"{train_mode} is an invalid training mode")

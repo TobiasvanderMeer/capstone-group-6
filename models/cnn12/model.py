@@ -1,9 +1,14 @@
 import torch
 from torch import nn
 
-train_mode = 'default'
-epochs = 200
-lr = 8e-6
+train_mode = 'default2'
+#training_settings = {"epochs": 200,
+#                     "lr": 8e-6,
+#                     "postfix": ""}
+training_settings = {"epochs": 200,
+                     "lr": 1e-6,
+                     "postfix": "lr1e-6"}
+
 
 class Block2(nn.Module):
     def __init__(self, n_hidden=144):
