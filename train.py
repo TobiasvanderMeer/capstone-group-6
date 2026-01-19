@@ -16,7 +16,6 @@ CONTINUE_FROM_LAST = True  # continue training from a previously saved model
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
 #TODO:  save printed output in a text file in the folder
-#       fix the convergence plot when you continue training from a saved model and generally improve this feature
 
 def default_train(n_epochs, lr, postfix):
     x = torch.tensor(utils.load_x_train().reshape((-1, 1, 60, 60)), dtype=torch.float)
