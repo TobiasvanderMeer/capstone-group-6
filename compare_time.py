@@ -8,8 +8,8 @@ from pathlib import Path
 # Import model and functions
 from jeffrey_code import hydraulic_conductivity_field, solve_darcy_flow, source_function
 
-model_id = "cnn15"  # change this to compare different models
-postfix = "_test"
+model_id = "cnn12c"  # change this to compare different models
+postfix = "_lr6e-5"
 
 
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
