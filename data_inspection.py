@@ -17,6 +17,7 @@ import math
 from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
+import utils
 
 
 # -----------------------------
@@ -26,8 +27,8 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "datasets"
 
 # Use the SAME split as cnn.py
-TRAIN_FILE_IDS = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
-TEST_FILE_IDS = ["_1000to1050", "_1050to1400"]
+TRAIN_FILE_IDS = utils.train_file_ids
+TEST_FILE_IDS = utils.test_file_ids
 
 # Normalization used in cnn.py
 LOGK_CENTER = 4.0

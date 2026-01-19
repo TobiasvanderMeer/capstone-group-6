@@ -34,6 +34,7 @@ import scipy
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
 
+import utils
 
 # -----------------------------
 # CONFIG
@@ -41,11 +42,12 @@ from scipy.sparse.linalg import spsolve
 DATASET_DIR = "datasets"
 
 # Match your test split order (same as train_unet.py)
-SET_IDS = ["_1000to1050", "_1050to1400"]
+SET_IDS = utils.test_file_ids
 
-# Prediction file from train_unet.py export
-model_id = "fc1"
-PRED_FILE = f"models/{model_id}/pred_test.txt"
+# Prediction file
+model_id = "cnn12c"  # change this to compare different models
+postfix = "_lr6e-5"
+PRED_FILE = f"models/{model_id}/pred_test{postfix}.txt"
 
 # Grid (same as jeffrey_code.py)
 N = 60

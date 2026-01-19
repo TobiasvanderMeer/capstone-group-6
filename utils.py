@@ -3,7 +3,8 @@ import numpy as np
 def load_files(filename: str, file_ids: list[str]):
     return np.concatenate([np.loadtxt(filename + file_id + ".txt") for file_id in file_ids])
 
-# some files might still use a hardcoded copies of these lines so be careful when modifying these
+# some files might still use a hardcoded copies of these lines so be careful when modifying these but like dont change
+# these because then all models need to be retrained probably.
 train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000",
                   "_7000to8000"]
 x_file_name = "datasets/k_set"

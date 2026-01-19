@@ -1,19 +1,15 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-# Use the same test split order as cnn.py (edit if your cnn.py uses different test_file_ids)
-# These match the ones from your train_unet.py run
-set_ids = ["_1000to1050", "_1050to1400"]
+import utils
 
 # Which prediction file to visualize:
-# CHANGED: Pointing to your new U-Net output
-model_id = "fc1"
-pred_file = f"models/{model_id}/pred_test.txt"
+model_id = "cnn12c"
+postfix = "_lr6e-5"
+pred_file = f"models/{model_id}/pred_test{postfix}.txt"
 
 # Load and concatenate test sets in the same order
-x = np.concatenate([np.loadtxt(f"datasets/k_set{sid}.txt") for sid in set_ids]).reshape((-1, 60, 60))
-y = np.concatenate([np.loadtxt(f"datasets/h_set{sid}.txt") for sid in set_ids]).reshape((-1, 60, 60))
+x = utils.load_x_test().reshape((-1, 60, 60))
+y = utils.load_y_test().reshape((-1, 60, 60))
 
 # Model outputs are normalized (h_norm). Unnormalize back to head units.
 pred = np.loadtxt(pred_file).reshape((-1, 60, 60)) * 37 + 146
