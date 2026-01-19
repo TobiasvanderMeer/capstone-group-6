@@ -1,10 +1,17 @@
 import torch
 from torch import nn
 
-train_mode = 'default'
-epochs = 1440
-lr = 8e-6
+train_mode = 'default2'
+#training_settings = {"epochs": 1440,
+#                     "lr": 8e-6,
+#                     "postfix": ""}
 
+training_settings = {"epochs": 200,
+                     "lr": 6e-5,
+                     "postfix": "_lr6e-5"}
+
+# this is a modified version of cnn12, where i placed more hidden layers at the start and less at the end, keeping the
+# number of parameters similar. The ideas is that this would reduce the noise in the results.
 
 class Block2(nn.Module):
     def __init__(self, n_hidden=144):
@@ -35,7 +42,6 @@ class Block2(nn.Module):
         return r
 
 class Model(nn.Module):
-    #MAE 2.030 after 200 epoch
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

@@ -3,33 +3,29 @@ from pathlib import Path
 import numpy as np
 import torch
 from torch import nn
-from utils import load_files
+import utils
 import matplotlib.pyplot as plt
 import importlib
 
 #the code is this file is used to train all the models. Please be careful when modifying this code to ensure backwards
 #compatibility
 
-model_id = "cnn12"  # change this to change different models
+model_id = "cnn15"  # change this to change different models
+CONTINUE_FROM_LAST = True  # continue training from a previously saved model
 
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
-#TODO:  print total time that elapsed during training
-#       save printed output in a text file in the folder
-#       fix the convergence plot when you continue training from a saved model and generaly improve this feature
+#TODO:  save printed output in a text file in the folder
+#       fix the convergence plot when you continue training from a saved model and generally improve this feature
 
 def default_train(n_epochs, lr, postfix):
-    train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000", "_7000to8000"]
-    #train_file_ids = ["0"]
-    test_file_ids = ["_1000to1050", "_1050to1400"]
-
-    x = torch.tensor(load_files("datasets/k_set", train_file_ids).reshape((-1, 1, 60, 60)), dtype=torch.float)
+    x = torch.tensor(utils.load_x_train().reshape((-1, 1, 60, 60)), dtype=torch.float)
     z = torch.log(x)-4
-    y = (torch.tensor(load_files("datasets/h_set", train_file_ids).reshape((-1, 60, 60)), dtype=torch.float)-146) / 37
+    y = (torch.tensor(utils.load_y_train().reshape((-1, 60, 60)), dtype=torch.float)-146) / 37
 
-    x_test = torch.tensor(load_files("datasets/k_set", test_file_ids).reshape((-1, 1, 60, 60)), dtype=torch.float)
+    x_test = torch.tensor(utils.load_x_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
     z_test = torch.log(x_test) - 4
-    y_test = (torch.tensor(load_files("datasets/h_set", test_file_ids).reshape((-1, 60, 60)), dtype=torch.float) - 146) / 37
+    y_test = (torch.tensor(utils.load_y_test().reshape((-1, 60, 60)), dtype=torch.float) - 146) / 37
 
 
     print(torch.mean((y - torch.mean(y, dim=0))**2))
@@ -59,8 +55,18 @@ def default_train(n_epochs, lr, postfix):
     print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
 
     # continue form existing model
-    #last = torch.load(out_dir / f"model_last.pt", map_location=device)
-    #model.load_state_dict(last["model_state_dict"])
+    if CONTINUE_FROM_LAST:
+        last = torch.load(out_dir / f"model_last{postfix}.pt", map_location=device)
+        model.load_state_dict(last["model_state_dict"])
+        train_losses = last["train_loss_history"]
+        test_losses = last["test_loss_history"]
+        total_train_time = last["training_time"]
+        best_test_loss = min(test_losses)
+    else:
+        train_losses = []
+        test_losses = []
+        total_train_time = 0
+        best_test_loss = float("inf")
 
     loss_fn = nn.MSELoss()
     optim = torch.optim.Adam(model.parameters(), lr=lr)
@@ -75,10 +81,6 @@ def default_train(n_epochs, lr, postfix):
     batch_size = 16
     batch_idx = np.arange(z.shape[0])
 
-    best_test = float("inf")
-
-    train_losses = []
-    test_losses = []
     for epoch in range(1, n_epochs + 1):
         t0 = time.time()
         model.train()
@@ -107,6 +109,7 @@ def default_train(n_epochs, lr, postfix):
             test_loss = loss_fn(pred_test, y_test).item()
 
         dt = time.time() - t0
+        total_train_time += dt
         print(f"epoch {epoch}/{n_epochs} | train_loss {train_loss:.6f} | test_loss {test_loss:.6f} | {dt:.1f}s")
         train_losses.append(train_loss)
         test_losses.append(test_loss)
@@ -118,21 +121,25 @@ def default_train(n_epochs, lr, postfix):
             "epoch": epoch,
             "model_state_dict": model.state_dict(),
             "optim_state_dict": optim.state_dict(),
+            "train_loss_history": train_losses,
+            "test_loss_history": test_losses,
             "train_loss": train_loss,
             "test_loss": test_loss,
             "baseline_loss": baseline,
+            "training_time": total_train_time,
             # Normalization constants used in this code:
-            "norm": {"logk_center": 4.0, "h_mean": 145.3243, "h_std": 35.5957},  # TODO this is not equal for all models
+            "norm": {"logk_center": 4.0, "h_mean": 146, "h_std": 37},  # TODO this is not equal for all models
             # Helpful metadata:
-            "train_file_ids": train_file_ids,
-            "test_file_ids": test_file_ids,
+            "train_file_ids": utils.train_file_ids,
+            "test_file_ids": utils.test_file_ids,
         }
 
         torch.save(ckpt, out_dir / f"model_last{postfix}.pt")
-        if test_loss < best_test:
-            best_test = test_loss
+        if test_loss < best_test_loss:
+            best_test_loss = test_loss
             torch.save(ckpt, out_dir / f"model_best{postfix}.pt")
 
+    print(f"finished training. Total training time: {total_train_time:.1f} seconds")
     # -------------------------
     # Save predictions
     # -------------------------
@@ -155,13 +162,13 @@ def default_train(n_epochs, lr, postfix):
     plt.show()
 
 if __name__ == "__main__":
-    #each model needs a variable called "training mode" this variable determines wha code is used to train the model
+    #each model needs a variable called "training mode" this variable determines what code is used to train the model
     train_mode = model_file.train_mode
     if train_mode == 'default':
         #this training mode uses the variables "lr" and "epochs". This on should not be used and is only included for
         #backwards compatibility
         print("Using default training code to train", model_id)
-        print("please use default2 instead because default is outdated")
+        print("please use default2 for new models because that one is just better")
         default_train(model_file.epochs, model_file.lr, "")
 
     elif train_mode == 'default2':

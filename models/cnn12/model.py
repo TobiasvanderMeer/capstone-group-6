@@ -5,9 +5,15 @@ train_mode = 'default2'
 #training_settings = {"epochs": 200,
 #                     "lr": 8e-6,
 #                     "postfix": ""}
+#training_settings = {"epochs": 200,
+#                     "lr": 1e-6,
+#                     "postfix": "lr1e-6"}
+#training_settings = {"epochs": 200,
+#                     "lr": 6e-5,
+#                     "postfix": "_lr6e-5"}
 training_settings = {"epochs": 200,
-                     "lr": 1e-6,
-                     "postfix": "lr1e-6"}
+                     "lr": 5e-4,
+                     "postfix": "_lr5e-4"}
 
 
 class Block2(nn.Module):
@@ -39,8 +45,8 @@ class Block2(nn.Module):
         return r
 
 class Model(nn.Module):
-    #MAE 2.059 (150 epochs 7600 samples) could improve with more training
-    # another 360 epochs at lr 8e-6 gets it to MAE 1.780
+    # cnn12
+
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

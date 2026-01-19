@@ -1,10 +1,12 @@
 import torch
 from torch import nn
 
-train_mode = 'default'
-epochs = 5
-lr = 8e-6
+train_mode = 'default2'
+training_settings = {"epochs": 5,
+                     "lr": 6e-5,
+                     "postfix": "_test"}
 
+#this is version of cnn14 with one residual connection
 class Model(nn.Module):
     #very bad trained at lr 1e-4
     def __init__(self):
