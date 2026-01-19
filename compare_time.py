@@ -37,30 +37,35 @@ h_std = ckpt["norm"]["h_std"]
 
 # Settings #TODO add batch comparison
 n = 60
-MAX_SAMPLES = 10
+MAX_SAMPLES = 4
+BATCH_SIZE = 16
 PLOT_H = False
 np.random.seed(42)
-seeds = np.random.choice(range(10000), size=MAX_SAMPLES, replace=False)
+seeds = np.random.choice(range(10000), size=MAX_SAMPLES*BATCH_SIZE, replace=False)
 f = source_function(n)
 
 true_times = []
 pred_times = []
 
 
-print("starting tests")
+print(f"starting tests, {MAX_SAMPLES} times batch of {BATCH_SIZE}")
 # Loop over 10 random samples
-for i, seed in enumerate(seeds):
+for i in range(MAX_SAMPLES):
+    subseeds = seeds[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
     # Generate random hydraulic conductivity field
-    kappa = hydraulic_conductivity_field(n, seed)
+    kappa = np.empty((BATCH_SIZE, 3600))
+    for j, seed in enumerate(subseeds):
+        kappa[j] = hydraulic_conductivity_field(n, seed)
 
     # True hydraulic head
     start_true = time.time()
-    h_true = solve_darcy_flow(n, kappa, f)
+    for j, seed in enumerate(subseeds):
+        h_true = solve_darcy_flow(n, kappa[j], f)
     end_true = time.time()
     true_times.append(end_true - start_true)
 
     # Predicted hydraulic head
-    x_input = torch.tensor(np.log(kappa) - logk_center, dtype=torch.float32).view((60, 60)).unsqueeze(0).unsqueeze(0).to(device)
+    x_input = torch.tensor(np.log(kappa) - logk_center, dtype=torch.float32).view((-1, 1, 60, 60)).to(device)
     start_pred = time.time()
     with torch.no_grad():
         h_pred_norm = model(x_input)
@@ -74,7 +79,7 @@ for i, seed in enumerate(seeds):
         # Plot True vs Predicted
         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-        axes[0].imshow(h_true.reshape((60, 60)), cmap='hot_r', origin='lower', interpolation='none')
+        axes[0].imshow(h_true[0].reshape((60, 60)), cmap='hot_r', origin='lower', interpolation='none')
         axes[0].set_title(f'True h\nTime: {true_times[-1]:.4f}s')
         axes[0].set_xlabel('x (km)')
         axes[0].set_ylabel('y (km)')
@@ -89,5 +94,5 @@ for i, seed in enumerate(seeds):
 
 
 # Average computation times
-print(f'Average computation time for TRUE h: {np.mean(true_times):.4f}s per image')
-print(f'Average computation time for PREDICTED h: {np.mean(pred_times):.4f}s per image')
+print(f'Average computation time for TRUE h: {np.mean(true_times):.4f}s per image batch')
+print(f'Average computation time for PREDICTED h: {np.mean(pred_times):.4f}s per image batch')
