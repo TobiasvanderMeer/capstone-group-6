@@ -11,7 +11,7 @@ import importlib
 #compatibility
 
 model_id = "cnn15"  # change this to change different models
-CONTINUE_FROM_LAST = True  # continue training from a previously saved model
+CONTINUE_FROM_LAST = False  # continue training from a previously saved model
 
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
@@ -55,6 +55,7 @@ def default_train(n_epochs, lr, postfix):
 
     # continue form existing model
     if CONTINUE_FROM_LAST:
+        print("Continueing training from a previously trained model")
         last = torch.load(out_dir / f"model_last{postfix}.pt", map_location=device)
         model.load_state_dict(last["model_state_dict"])
         train_losses = last["train_loss_history"]
