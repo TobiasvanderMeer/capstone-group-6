@@ -37,8 +37,7 @@ class Block2b(nn.Module):
 
 
 class Model(nn.Module):
-    #first 30 epochs at lr 1e-5, then 30 at 3e-6
-    #MAE 2.1407
+    # this is a larger version of cnn12 with more channels in the blocks. Does not really work better and is much slower
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

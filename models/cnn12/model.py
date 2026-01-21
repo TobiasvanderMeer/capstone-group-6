@@ -45,8 +45,13 @@ class Block2(nn.Module):
         return r
 
 class Model(nn.Module):
-    # cnn12
-
+    # cnn12: this model uses four blocks and a double fully connected layes. The idea is that the first 2 fully
+    # connected layers compute a estimate of the h we want to predict, and the blocks iteratively compute a refinement to
+    # this estimate. Each block has four convolutional layers. The input to these convolutional layers consists of four
+    # channels, one for the raw input (the conductivity), one for the most recent estimate of h, and the other two
+    # channels use the same date but first apply a double fully connected layer to help generate the global structure
+    # of the h-field. We used double fully connected layers instead of single ones because this reduces the number of
+    # parameters because we ues a small number of hidden layers
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

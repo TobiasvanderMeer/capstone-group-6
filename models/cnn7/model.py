@@ -6,7 +6,8 @@ epochs = 50
 lr = 8e-2
 
 class Model(nn.Module):
-    #best of the powerlayer models
+    # this model repeats the powerlayer block multiple times in an attempt to iteratively refine the h-field int the
+    # solution
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

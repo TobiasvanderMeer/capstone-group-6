@@ -7,8 +7,8 @@ training_settings = {"epochs": 50,
                      "postfix": "_test"}
 
 class Model(nn.Module):
-    # her I added residual connection to improve training. The model converges faster than model15 but still very bad
-    # performance. Also takes much longer to train (48 seconds per epoch)
+    # her I added 3 residual connections to improve training. The model converges faster than model15 and has a bit
+    # better performance. Still takes long to train (48 seconds per epoch on GPU)
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

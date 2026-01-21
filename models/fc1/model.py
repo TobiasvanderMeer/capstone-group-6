@@ -6,6 +6,8 @@ epochs = 100
 lr = 2e-4
 
 class Model(nn.Module):
+    # we also trained this fully connected model as baseline. Performance is OK with MAE of 2.50. The result are
+    # surprisingly smooth showing that convolutional layers are not needed to get smooth results
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

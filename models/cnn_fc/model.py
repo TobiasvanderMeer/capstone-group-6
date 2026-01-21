@@ -16,7 +16,10 @@ training_settings = {"epochs": 400,
                      "postfix": "_lr8e-6"}
 
 class Model(nn.Module):
-    #
+    # During one of the meetings the idea of putting a fully connected layer behind a convolutional one came up.
+    # This model starts with a convolutional part that is very similar to the encoder part of a u-net, after that
+    # it has three fully connected layers. This model works very well, giving a MEA of 1.053 when trained. The model
+    # also generates a relatively smooth output field and it does not have bad outliers
 
     def __init__(self):
         super().__init__()
@@ -40,6 +43,7 @@ class Model(nn.Module):
 
 
     def forward(self, x):
+        #convolutional part
         h = self.relu(self.conv1(x))
         h = self.relu(self.conv2(h))
         h = self.pool1(h)
@@ -55,6 +59,7 @@ class Model(nn.Module):
         h = self.relu(self.conv7(h))
         h = self.relu(self.conv8(h)).view(-1, 4096)
 
+        # fully connected part
         h = self.relu(self.fc1(h))
         h = self.relu(self.fc2(h))
         h = self.fc3(h)

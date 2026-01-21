@@ -6,9 +6,9 @@ training_settings = {"epochs": 50,
                      "lr": 6e-5,
                      "postfix": "_test"}
 
-#this is version of cnn14 with one residual connection
+
 class Model(nn.Module):
-    #very bad trained at lr 1e-4
+    #this is version of cnn14 with one residual connection. This one trains much better and gives better results
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

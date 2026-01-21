@@ -26,7 +26,12 @@ class Block3(nn.Module):
         self.ff[0, 0, :] = 36.49635
 
     def forward(self, x, hr):
-        # MAE 2.484
+        # This models tries to take the boundry conditions into account by using different modes of padding on the
+        # different boundaries. On the boundaries with d/dx = 0 and d/dy = 0 it reflects. On the boundary where h=100
+        # it uses and odd reflection, such that h(y) = 100 - h(-y), taking into account the normalization the get the
+        # right number. on the last edge where the water flows in we use also a reflection and we let the water come
+        # in via the source function which we also added in this model
+        # the performance of the model is not better compared to model12 and the boundaries also arent much better
         z = torch.empty((x.shape[0], 5, 60, 60), device=x.device)
         z[:, 0, :, :] = x.view(-1, 60, 60)
         z[:, 1, :, :] = self.prep1(x.view(-1, 3600)).view(-1, 60, 60)

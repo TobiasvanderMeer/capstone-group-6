@@ -6,7 +6,8 @@ epochs = 50
 lr = 4e-5
 
 class Model(nn.Module):
-    #trains less good than model7, but might get better performance after more epochs
+    # This is a modified versions of cnn7 but with 2 convolutional layers added to the end.
+    # trains less good than model7, but might get better performance after more epochs
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()

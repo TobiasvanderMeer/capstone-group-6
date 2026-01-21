@@ -7,7 +7,9 @@ training_settings = {"epochs": 100,
                      "postfix": ""}
 
 class Model(nn.Module):
-    #trained very poorly at 60 epochs lr 1e-6 and 60 at lr 1e-5
+    # This is a test to see how a fully convolutional net works. The performance is worse than the fully connected net
+    # and the model struggles to find the proper global structure. The resulting fields are however super smooth.
+    # Also takes much longer to train compared to the other models (48 seconds per epoch on GPU)
     def __init__(self):
         super().__init__()
         self.relu = nn.ReLU()
