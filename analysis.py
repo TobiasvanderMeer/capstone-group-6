@@ -4,16 +4,16 @@ import utils
 import torch
 
 # Which prediction file to visualize (change these two):
-model_id = "cnn8"
+model_id = "unet44"
 postfix = ""  # use "" for no postfix
-n = 60
 
+n = 64 if model_id in ["unet88", "unet44"] else 60  # choose the right resolution
 
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
 # show the samples in order of descending error (worst predictions first)
 SHOW_ORDERED_BY_ERROR = False
-RESHOW_CONVERGENCE = True  # this show the convergence plot again (same as the one saved, but useful if you want to zoom in)
+RESHOW_CONVERGENCE = False  # this show the convergence plot again (same as the one saved, but useful if you want to zoom in)
 
 #this will be the file we will need to analise (don't change this line)
 pred_file = f"models/{model_id}/pred_test{postfix}.txt"
@@ -38,11 +38,21 @@ if n == 60:
 elif n == 64:
     x = utils.load_x_test64().reshape((-1, n, n))
     y = utils.load_y_test64().reshape((-1, n, n))
+    if not model_id == "unet44":
+        x = x[:1000]
+        y = y[:1000]
 else:
     raise ValueError(f"{n} is not a supported resolution")
 
 # Model outputs are normalized (h_norm). Unnormalize back to head units.
-pred = np.loadtxt(pred_file).reshape((-1, n, n)) * 37 + 146
+if model_id in ["unet", "unet88", "unet44"]:
+    H_MEAN = 145.3243  # 146
+    H_STD = 35.5957  # 37
+else:
+    H_MEAN = 146
+    H_STD = 37
+
+pred = np.loadtxt(pred_file).reshape((-1, n, n)) * H_STD + H_MEAN
 
 print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 

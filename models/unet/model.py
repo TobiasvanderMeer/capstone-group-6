@@ -30,7 +30,7 @@ class Model(nn.Module):
     Includes the 'Global Brain' fix in the bottleneck to catch that linear gradient.
     """
 
-    def __init__(self, base_ch: int = 32, enforce_dirichlet_row0: bool = False):
+    def __init__(self, base_ch: int = 64, enforce_dirichlet_row0: bool = False):
         super().__init__()
 
         self.enforce_dirichlet_row0 = enforce_dirichlet_row0
@@ -345,7 +345,6 @@ def custom_train():
         if device.type == "cuda":
             torch.cuda.empty_cache()
 
-        pred_train = predict_in_batches(model, z, batch_size=PRED_BATCH_TRAIN)
         pred_test = predict_in_batches(model, z_test, batch_size=PRED_BATCH_TEST)
 
         np.savetxt("models/unet/pred_test.txt", pred_test.reshape((-1, 3600)))

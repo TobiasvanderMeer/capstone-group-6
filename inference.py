@@ -8,8 +8,8 @@ np.random.seed(42)
 
 from jeffrey_code import hydraulic_conductivity_field, source_function
 
-class Predictor_example:
-    def __init__(self, model_id, postfix):
+class Predictor:
+    def __init__(self, model_id, postfix, n):
 
         model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
@@ -25,6 +25,8 @@ class Predictor_example:
         ckpt_path = out_dir / f"model_last{postfix}.pt"
         ckpt = torch.load(ckpt_path, map_location=self.device)
 
+        self.n = n
+
         self.model = model_file.Model().to(self.device)
         self.model.load_state_dict(ckpt["model_state_dict"])
         self.model.eval()
@@ -35,11 +37,11 @@ class Predictor_example:
 
     def predict(self, kappa):
         # Predicted hydraulic head
-        x_input = torch.tensor(np.log(kappa) - self.logk_center, dtype=torch.float32).view((-1, 1, 60, 60)).to(self.device)
+        x_input = torch.tensor(np.log(kappa) - self.logk_center, dtype=torch.float32).view((-1, 1, self.n, self.n)).to(self.device)
 
         with torch.no_grad():
-            h_pred_norm = self.model(x_input)
-        return h_pred_norm.cpu().numpy()[0] * self.h_std + self.h_mean
+            h_pred_norm = self.model(x_input).view(-1, self.n, self.n)
+        return h_pred_norm.cpu().numpy() * self.h_std + self.h_mean
 
 
 def random_input(n=60):
@@ -56,9 +58,9 @@ def main():
     kappa = random_input()
 
     # make the predictor
-    predictor = Predictor_example("cnn12c", "_lr6e-5")
+    predictor = Predictor("cnn12c", "_lr6e-5", 60)
     # this is the inference
-    h_pred = predictor.predict(kappa)
+    h_pred = predictor.predict(kappa)[0]
 
     # show results
     plt.imshow(h_pred, cmap='hot_r', origin='lower', interpolation='none')
