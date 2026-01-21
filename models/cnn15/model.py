@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 train_mode = 'default2'
-training_settings = {"epochs": 5,
+training_settings = {"epochs": 50,
                      "lr": 6e-5,
                      "postfix": "_test"}
 
@@ -33,7 +33,7 @@ class Model(nn.Module):
         h2 = self.relu(self.conv7(h2))
         h2 = self.relu(self.conv8(h2)) + h1
         h2 = self.relu(self.conv9(h2))
-        h2 = self.relu(self.conv10(h2))
+        h2 = self.conv10(h2)
         return h2.view(-1, 60, 60)
 
 def custom_train():
