@@ -1,11 +1,13 @@
 """
 data_inspection.py
 
-Quick sanity checks for Darcy surrogate datasets (64x64):
+Extended sanity + evaluation checks for Darcy surrogate datasets (64x64):
+
 - Train/test distribution sanity (logK and h)
 - Boundary-condition consistency checks on h
-- Optional: evaluate saved predictions vs ground truth
-- A few plots for human sanity
+- Global MAE / RMSE
+- Per-sample MAE (optioneel gesorteerd: worst first)
+- Visual inspection of worst predictions
 """
 
 from __future__ import annotations
@@ -25,7 +27,7 @@ DATA_DIR = ROOT / "datasets"
 
 # Batch IDs (same split as train_unet.py)
 TRAIN_BATCH_IDS = [0, 1, 2, 3, 4, 5]
-TEST_BATCH_IDS = [6]
+TEST_BATCH_IDS = [8, 9]
 
 # Normalization (same as train_unet.py)
 LOGK_CENTER = 4.0
@@ -35,10 +37,11 @@ H_STD = 35.5957
 GRID_H = 64
 GRID_W = 64
 
-# Plot limits
-N_PLOTS = 5
+# Plot settings
+SHOW_ORDERED_BY_ERROR = True     # worst samples first
+MAX_ERROR_PLOTS = 5              # number of samples to visualize
 
-# If False → only test set is loaded
+# Load full train set or only test
 LOAD_TRAIN_FULL = True
 
 # Sampling for quantiles
@@ -58,8 +61,6 @@ def load_batches(prefix: str, batch_ids: list[int]) -> np.ndarray:
         a = np.loadtxt(p, dtype=np.float32)
         if a.ndim == 1:
             a = a[None, :]
-        if a.shape[1] != GRID_H * GRID_W:
-            raise ValueError(f"{p} expected {GRID_H*GRID_W} cols, got {a.shape[1]}")
         arrays.append(a.reshape(-1, GRID_H, GRID_W))
     return np.concatenate(arrays, axis=0)
 
@@ -96,55 +97,34 @@ def boundary_checks(h: np.ndarray, name: str) -> None:
 
 
 def plot_triplet(logk, h_true, h_pred, title, levels=20):
-    ncols = 4 if h_pred is not None else 2
-    fig, axes = plt.subplots(1, ncols, figsize=(4*ncols, 4))
+    fig, axes = plt.subplots(1, 4, figsize=(16, 4))
     fig.suptitle(title)
 
-    # --- logK (NO contours) ---
     im0 = axes[0].imshow(logk, origin="lower")
     axes[0].set_title("logK")
     axes[0].axis("off")
     fig.colorbar(im0, ax=axes[0])
 
-    # --- true h (WITH contours) ---
     im1 = axes[1].imshow(h_true, origin="lower")
-    cs1 = axes[1].contour(
-        h_true,
-        levels=levels,
-        colors="k",
-        linewidths=0.7,
-        origin="lower"
-    )
-    axes[1].clabel(cs1, inline=True, fontsize=7)
+    cs1 = axes[1].contour(h_true, levels=levels, colors="k", linewidths=0.7)
     axes[1].set_title("true h")
     axes[1].axis("off")
     fig.colorbar(im1, ax=axes[1])
 
-    if h_pred is not None:
-        # --- pred h (WITH contours) ---
-        im2 = axes[2].imshow(h_pred, origin="lower")
-        cs2 = axes[2].contour(
-            h_pred,
-            levels=levels,
-            colors="k",
-            linewidths=0.7,
-            origin="lower"
-        )
-        axes[2].clabel(cs2, inline=True, fontsize=7)
-        axes[2].set_title("pred h")
-        axes[2].axis("off")
-        fig.colorbar(im2, ax=axes[2])
+    im2 = axes[2].imshow(h_pred, origin="lower")
+    cs2 = axes[2].contour(h_pred, levels=levels, colors="k", linewidths=0.7)
+    axes[2].set_title("pred h")
+    axes[2].axis("off")
+    fig.colorbar(im2, ax=axes[2])
 
-        # --- error (NO contours) ---
-        err = h_pred - h_true
-        im3 = axes[3].imshow(err, origin="lower")
-        axes[3].set_title("pred − true")
-        axes[3].axis("off")
-        fig.colorbar(im3, ax=axes[3])
+    err = h_pred - h_true
+    im3 = axes[3].imshow(err, origin="lower")
+    axes[3].set_title("pred − true")
+    axes[3].axis("off")
+    fig.colorbar(im3, ax=axes[3])
 
     plt.tight_layout()
     plt.show()
-
 
 
 # ============================================================
@@ -154,7 +134,7 @@ def plot_triplet(logk, h_true, h_pred, title, levels=20):
 def main():
     rng = np.random.default_rng(0)
 
-    print("=== Data inspection (64x64) ===")
+    print("=== Data inspection + per-sample evaluation (64x64) ===")
     print("DATA_DIR:", DATA_DIR)
 
     # Load datasets
@@ -174,58 +154,60 @@ def main():
 
     # Distribution summaries
     print("\n[Distributions]")
-    s_logk_test = sample_pixels(np.log(k_test), MAX_SAMPLE_VALUES, rng)
-    summarize_field("logK test", k_test, s_logk_test)
-
-    s_h_test = sample_pixels(h_test, MAX_SAMPLE_VALUES, rng)
-    summarize_field("h test", h_test, s_h_test)
+    summarize_field("logK test", k_test, sample_pixels(np.log(k_test), MAX_SAMPLE_VALUES, rng))
+    summarize_field("h test", h_test, sample_pixels(h_test, MAX_SAMPLE_VALUES, rng))
 
     if k_train is not None:
-        s_logk_train = sample_pixels(np.log(k_train), MAX_SAMPLE_VALUES, rng)
-        summarize_field("logK train", k_train, s_logk_train)
+        summarize_field("logK train", k_train, sample_pixels(np.log(k_train), MAX_SAMPLE_VALUES, rng))
+        summarize_field("h train", h_train, sample_pixels(h_train, MAX_SAMPLE_VALUES, rng))
 
-        s_h_train = sample_pixels(h_train, MAX_SAMPLE_VALUES, rng)
-        summarize_field("h train", h_train, s_h_train)
-
-        print("\n[Train/Test shift]")
-        print("  logK mean diff:", np.log(k_test).mean() - np.log(k_train).mean())
-        print("  h mean diff   :", h_test.mean() - h_train.mean())
-
-    # Normalization sanity
-    print("\n[Normalization sanity]")
-    print("  test y_norm mean:", (h_test.mean() - H_MEAN) / H_STD)
-    print("  test y_norm std :", h_test.std() / H_STD)
-
-    # BC checks
+    # Boundary conditions
     boundary_checks(h_test, "test")
     if h_train is not None:
         boundary_checks(h_train, "train")
 
-    # Optional predictions
-    pred_test_path = ROOT / "pred_test_unet_64x64.txt"
-    pred_test = None
+    # ========================================================
+    # Prediction evaluation
+    # ========================================================
 
-    if pred_test_path.exists():
-        pred_norm = np.loadtxt(pred_test_path, dtype=np.float32).reshape(-1, GRID_H, GRID_W)
-        y_test_norm = (h_test - H_MEAN) / H_STD
-
-        mse = np.mean((pred_norm - y_test_norm)**2)
-        print("\n[Prediction check]")
-        print("  test RMSE (norm):", math.sqrt(mse))
-        print("  test RMSE (units):", math.sqrt(mse) * H_STD)
-
-        pred_test = pred_norm * H_STD + H_MEAN
-    else:
+    pred_path = ROOT / "pred_test_unet_64x64.txt"
+    if not pred_path.exists():
         print("\n[Prediction check] pred_test_unet_64x64.txt not found → skipped")
+        return
 
-    # Plots
-    print(f"\n[Plots] Showing up to {N_PLOTS} test samples")
-    for i in range(min(N_PLOTS, k_test.shape[0])):
+    pred_norm = np.loadtxt(pred_path, dtype=np.float32).reshape(-1, GRID_H, GRID_W)
+    y_test_norm = (h_test - H_MEAN) / H_STD
+
+    err_norm = pred_norm - y_test_norm
+    mse = np.mean(err_norm**2)
+    mae = np.mean(np.abs(err_norm))
+
+    print("\n[Prediction check]")
+    print(f"  test RMSE (norm):  {math.sqrt(mse):.6f}")
+    print(f"  test RMSE (units): {math.sqrt(mse) * H_STD:.6f}")
+    print(f"  test MAE  (norm):  {mae:.6f}")
+    print(f"  test MAE  (units): {mae * H_STD:.6f}")
+
+    # Unnormalize predictions
+    pred_test = pred_norm * H_STD + H_MEAN
+
+    # Per-sample MAE
+    sample_mae = np.mean(np.abs(pred_test - h_test), axis=(1, 2))
+
+    if SHOW_ORDERED_BY_ERROR:
+        order = np.argsort(sample_mae)[::-1]
+    else:
+        order = np.arange(len(sample_mae))
+
+    print(f"\n[Plots] Showing up to {MAX_ERROR_PLOTS} samples")
+
+    for rank, i in enumerate(order[:MAX_ERROR_PLOTS]):
+        print(f"Sample {i:4d} | MAE = {sample_mae[i]:.4f} (rank {rank+1})")
         plot_triplet(
             np.log(k_test[i]),
             h_test[i],
-            pred_test[i] if pred_test is not None else None,
-            title=f"Test sample {i}"
+            pred_test[i],
+            title=f"Test sample {i} | MAE={sample_mae[i]:.3f}"
         )
 
     print("\nDone.")

@@ -23,8 +23,9 @@ from unet import UNet64
 # ============================================================
 
 # Batch files: datasets/k_set_64x64_batch{i}.txt
-TRAIN_BATCH_IDS = list(range(0, 6))   # e.g. 0–7 → 8000 samples
-TEST_BATCH_IDS  = list(range(6, 7))  # e.g. 8–9 → 2000 samples
+TRAIN_BATCH_IDS = list(range(0, 6))  
+TEST_BATCH_IDS  = list(range(6, 8))  
+
 
 LOGK_CENTER = 4.0
 H_MEAN = 145.3243
