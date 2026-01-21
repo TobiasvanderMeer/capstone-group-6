@@ -11,7 +11,7 @@ import importlib
 #compatibility
 
 
-model_id = "cnn_fc2"  # change this to change different models
+model_id = "unet"  # change this to change different models
 
 CONTINUE_FROM_LAST = False  # continue training from a previously saved model
 
@@ -204,6 +204,7 @@ if __name__ == "__main__":
         case 'custom':
             #for training algorithms that are specific to one model, please add the training code in the model file.
             #this one is not used (yet) so you can change the code without worrying about backwards compatibility too much
+            print("Using custom training code to train", model_id)
             model_file.custom_train()
         case _:
             print(f"{train_mode} is an invalid training mode")

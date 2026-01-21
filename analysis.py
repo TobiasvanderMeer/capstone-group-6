@@ -4,14 +4,14 @@ import utils
 import torch
 
 # Which prediction file to visualize (change these two):
-model_id = "cnn_fc"
-postfix = "_lr2e-5"  # use "" for no postfix
+model_id = "unet"
+postfix = ""  # use "" for no postfix
 
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
 # show the samples in order of descending error (worst predictions first)
 SHOW_ORDERED_BY_ERROR = False
-RESHOW_CONVERGENCE = True  # this show the convergence plot again (same as the one save, but useful if you want to zoom in)
+RESHOW_CONVERGENCE = False  # this show the convergence plot again (same as the one save, but useful if you want to zoom in)
 
 #this will be the file we will need to analise (don't change this line)
 pred_file = f"models/{model_id}/pred_test{postfix}.txt"
