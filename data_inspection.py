@@ -170,9 +170,9 @@ def main():
     # Prediction evaluation
     # ========================================================
 
-    pred_path = ROOT / "pred_test_unet_64x64.txt"
+    pred_path = ROOT / "pred_test_unet_64x64_4.txt"
     if not pred_path.exists():
-        print("\n[Prediction check] pred_test_unet_64x64.txt not found → skipped")
+        print("\n[Prediction check] pred_test_unet_64x64_4.txt not found → skipped")
         return
 
     pred_norm = np.loadtxt(pred_path, dtype=np.float32).reshape(-1, GRID_H, GRID_W)
