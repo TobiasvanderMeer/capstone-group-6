@@ -1,20 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import utils
+import torch
 
-# Which prediction file to visualize:
-model_id = "cnn12c"
-postfix = "_lr6e-5"  # use "" for no postfix
-
-#this will be the file we will need to analise
-pred_file = f"models/{model_id}/pred_test{postfix}.txt"
+# Which prediction file to visualize (change these two):
+model_id = "cnn_fc"
+postfix = "_lr2e-5"  # use "" for no postfix
 
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
 # show the samples in order of descending error (worst predictions first)
 SHOW_ORDERED_BY_ERROR = False
+RESHOW_CONVERGENCE = True  # this show the convergence plot again (same as the one save, but useful if you want to zoom in)
 
-# Load and concatenate test sets
+#this will be the file we will need to analise (don't change this line)
+pred_file = f"models/{model_id}/pred_test{postfix}.txt"
+
+if RESHOW_CONVERGENCE:
+    # this show the convergence plot again
+    last = torch.load(f"models/{model_id}/model_last{postfix}.pt")
+    train_losses = last["train_loss_history"]
+    test_losses = last["test_loss_history"]
+    total_train_time = last["training_time"]
+    print(f"this model was trained in {total_train_time} seconds")
+    plt.plot(train_losses)
+    plt.plot(test_losses)
+    plt.legend(["train_loss", "test_loss"])
+    print("showing convergence")
+    plt.show()
+
+# Load test sets
 x = utils.load_x_test().reshape((-1, 60, 60))
 y = utils.load_y_test().reshape((-1, 60, 60))
 
@@ -26,12 +41,13 @@ print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 n = min(len(x), len(y), len(pred), MAX_PLOTS)
 
 if SHOW_ORDERED_BY_ERROR:
-    # show the samples in order of decreasing MAE
+    # show the samples in order of decreasing MAE (useful for investigating outliers)
     MAEs = np.mean(np.abs(y-pred), axis=(1, 2))
     #plt.plot(MAEs, "o")
     #plt.show()
     order = [list(MAEs).index(i) for i in sorted(list(MAEs), reverse=True)]
 else:
+    # this show the samples in order of the dataset
     order = range(n)
 
 
@@ -43,7 +59,7 @@ for i in order:
     # This helps you compare them fairly
     vmin, vmax = np.min(y[i]), np.max(y[i])
 
-    #todo: add color bar
+    # make plots
     ax1.set_title("log(K)")
     k_plot = ax1.imshow(np.log(x[i]), origin="lower")
     f.colorbar(k_plot, ax=ax1, shrink=0.6)

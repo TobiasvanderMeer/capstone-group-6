@@ -1,9 +1,10 @@
 import torch
 from torch import nn
 
-train_mode = 'default'
-epochs = 5
-lr = 8e-6
+train_mode = 'default2'
+training_settings = {"epochs": 50,
+                     "lr": 6e-5,
+                     "postfix": "_test"}
 
 class Model(nn.Module):
     # her I added residual connection to improve training. The model converges faster than model15 but still very bad
@@ -44,7 +45,7 @@ class Model(nn.Module):
         h4 = self.relu(self.conv10(h4))
         h4 = self.relu(self.conv11(h4)) + h3
 
-        h5 = self.relu(self.conv12(h4))
+        h5 = self.conv12(h4)
         return h5.view(-1, 60, 60)
 
 def custom_train():

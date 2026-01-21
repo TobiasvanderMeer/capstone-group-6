@@ -1,9 +1,10 @@
 import torch
 from torch import nn
 
-train_mode = 'default'
-epochs = 5
-lr = 8e-6
+train_mode = 'default2'
+training_settings = {"epochs": 100,
+                     "lr": 8e-6,
+                     "postfix": ""}
 
 class Model(nn.Module):
     #trained very poorly at 60 epochs lr 1e-6 and 60 at lr 1e-5
@@ -31,7 +32,7 @@ class Model(nn.Module):
         h1 = self.relu(self.conv7(h1))
         h1 = self.relu(self.conv8(h1))
         h1 = self.relu(self.conv9(h1))
-        h1 = self.relu(self.conv10(h1))
+        h1 = self.conv10(h1)
         return h1.view(-1, 60, 60)
 
 def custom_train():
