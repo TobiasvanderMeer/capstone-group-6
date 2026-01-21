@@ -35,7 +35,7 @@ h_mean = ckpt["norm"]["h_mean"]
 h_std = ckpt["norm"]["h_std"]
 
 
-# Settings #TODO add batch comparison
+# Settings
 n = 60
 MAX_SAMPLES = 4
 BATCH_SIZE = 16

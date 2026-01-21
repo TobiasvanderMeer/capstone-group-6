@@ -11,7 +11,7 @@ postfix = "_test"  # use "" for no postfix
 MAX_PLOTS = 10
 # show the samples in order of descending error (worst predictions first)
 SHOW_ORDERED_BY_ERROR = True
-RESHOW_CONVERGENCE = False  # this show the convergence plot again (same as the one save, but useful if you want to zoom in)
+RESHOW_CONVERGENCE = False  # this show the convergence plot again (same as the one saved, but useful if you want to zoom in)
 
 #this will be the file we will need to analise (don't change this line)
 pred_file = f"models/{model_id}/pred_test{postfix}.txt"
