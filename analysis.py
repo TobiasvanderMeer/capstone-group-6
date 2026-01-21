@@ -4,13 +4,15 @@ import utils
 import torch
 
 # Which prediction file to visualize (change these two):
-model_id = "cnn16"
-postfix = "_test"  # use "" for no postfix
+model_id = "unet"
+postfix = ""  # use "" for no postfix
+n = 60
+
 
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
 # show the samples in order of descending error (worst predictions first)
-SHOW_ORDERED_BY_ERROR = True
+SHOW_ORDERED_BY_ERROR = False
 RESHOW_CONVERGENCE = False  # this show the convergence plot again (same as the one saved, but useful if you want to zoom in)
 
 #this will be the file we will need to analise (don't change this line)
@@ -30,11 +32,17 @@ if RESHOW_CONVERGENCE:
     plt.show()
 
 # Load test sets
-x = utils.load_x_test().reshape((-1, 60, 60))
-y = utils.load_y_test().reshape((-1, 60, 60))
+if n == 60:
+    x = utils.load_x_test().reshape((-1, n, n))
+    y = utils.load_y_test().reshape((-1, n, n))
+elif n == 64:
+    x = utils.load_x_test64().reshape((-1, n, n))
+    y = utils.load_y_test64().reshape((-1, n, n))
+else:
+    raise ValueError(f"{n} is not a supported resolution")
 
 # Model outputs are normalized (h_norm). Unnormalize back to head units.
-pred = np.loadtxt(pred_file).reshape((-1, 60, 60)) * 37 + 146
+pred = np.loadtxt(pred_file).reshape((-1, n, n)) * 37 + 146
 
 print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 

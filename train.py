@@ -11,7 +11,7 @@ import importlib
 #compatibility
 
 
-model_id = "unet"  # change this to change different models
+model_id = "unet44"  # change this to change different models
 
 CONTINUE_FROM_LAST = False  # continue training from a previously saved model
 

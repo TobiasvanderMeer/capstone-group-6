@@ -41,18 +41,24 @@ import utils
 # -----------------------------
 DATASET_DIR = "datasets"
 
-# Match your test split order (same as train_unet.py)
-SET_IDS = utils.test_file_ids
-
 # Prediction file
-model_id = "cnn12c"  # change this to compare different models
-postfix = "_lr6e-5"
+model_id = "unet88"  # change this to compare different models
+postfix = ""
 PRED_FILE = f"models/{model_id}/pred_test{postfix}.txt"
+N = 64
 
 # Grid (same as jeffrey_code.py)
-N = 60
 L = 6.0
 DX = L / (N - 1)
+
+# Match your test split order (same as train_unet.py)
+if N == 60:
+    SET_IDS = utils.test_file_ids
+elif N == 64:
+    SET_IDS = ["_64x64_batch" + id for id in  utils.test_file_ids64]
+else:
+    raise ValueError(f"{N} is not a supported resolution")
+
 
 # Your updated normalization (you said you retrained with these)
 PRED_IS_NORMALIZED = True

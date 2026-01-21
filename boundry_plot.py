@@ -3,16 +3,23 @@ import matplotlib.pyplot as plt
 import utils
 
 # Which prediction file to visualize:
-model_id = "cnn12c"
-postfix = "_lr6e-5"
+model_id = "unet88"
+postfix = ""
 pred_file = f"models/{model_id}/pred_test{postfix}.txt"
+n = 64
 
-# Load and concatenate test sets in the same order
-x = utils.load_x_test().reshape((-1, 60, 60))
-y = utils.load_y_test().reshape((-1, 60, 60))
+# Load test sets
+if n == 60:
+    x = utils.load_x_test().reshape((-1, n, n))
+    y = utils.load_y_test().reshape((-1, n, n))
+elif n == 64:
+    x = utils.load_x_test64().reshape((-1, n, n))
+    y = utils.load_y_test64().reshape((-1, n, n))
+else:
+    raise ValueError(f"{n} is not a supported resolution")
 
 # Model outputs are normalized (h_norm). Unnormalize back to head units.
-pred = np.loadtxt(pred_file).reshape((-1, 60, 60)) * 37 + 146
+pred = np.loadtxt(pred_file).reshape((-1, n, n)) * 37 + 146
 
 print("MAE (full test set): ", np.mean(np.abs(y-pred)))
 # Plot at most this many samples (avoid 100 popups)

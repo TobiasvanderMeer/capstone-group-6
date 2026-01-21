@@ -8,9 +8,9 @@ from pathlib import Path
 # Import model and functions
 from jeffrey_code import hydraulic_conductivity_field, solve_darcy_flow, source_function
 
-model_id = "cnn12c"  # change this to compare different models
-postfix = "_lr6e-5"
-
+model_id = "unet88"  # change this to compare different models
+postfix = ""
+n = 64
 
 model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
@@ -36,9 +36,8 @@ h_std = ckpt["norm"]["h_std"]
 
 
 # Settings
-n = 60
-MAX_SAMPLES = 4
-BATCH_SIZE = 16
+MAX_SAMPLES = 2
+BATCH_SIZE = 4
 PLOT_H = False
 np.random.seed(42)
 seeds = np.random.choice(range(10000), size=MAX_SAMPLES*BATCH_SIZE, replace=False)
@@ -53,7 +52,7 @@ print(f"starting tests, {MAX_SAMPLES} times batch of {BATCH_SIZE}")
 for i in range(MAX_SAMPLES):
     subseeds = seeds[i*BATCH_SIZE:(i+1)*BATCH_SIZE]
     # Generate random hydraulic conductivity field
-    kappa = np.empty((BATCH_SIZE, 3600))
+    kappa = np.empty((BATCH_SIZE, n*n))
     for j, seed in enumerate(subseeds):
         kappa[j] = hydraulic_conductivity_field(n, seed)
 
@@ -65,7 +64,7 @@ for i in range(MAX_SAMPLES):
     true_times.append(end_true - start_true)
 
     # Predicted hydraulic head
-    x_input = torch.tensor(np.log(kappa) - logk_center, dtype=torch.float32).view((-1, 1, 60, 60)).to(device)
+    x_input = torch.tensor(np.log(kappa) - logk_center, dtype=torch.float32).view((-1, 1, n, n)).to(device)
     start_pred = time.time()
     with torch.no_grad():
         h_pred_norm = model(x_input)
@@ -79,7 +78,7 @@ for i in range(MAX_SAMPLES):
         # Plot True vs Predicted
         fig, axes = plt.subplots(1, 2, figsize=(10, 4))
 
-        axes[0].imshow(h_true[0].reshape((60, 60)), cmap='hot_r', origin='lower', interpolation='none')
+        axes[0].imshow(h_true[0].reshape((n, n)), cmap='hot_r', origin='lower', interpolation='none')
         axes[0].set_title(f'True h\nTime: {true_times[-1]:.4f}s')
         axes[0].set_xlabel('x (km)')
         axes[0].set_ylabel('y (km)')
