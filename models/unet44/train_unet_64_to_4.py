@@ -112,8 +112,8 @@ def main(UNet64) -> None:
     # -------------------------
     # Device
     # -------------------------
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = "cpu"
     print("using device:", device)
 
     z = z.to(device)
@@ -251,5 +251,8 @@ def main(UNet64) -> None:
     print(f"best test loss: {best_test:.6f} (epoch {best_epoch})")
 
 
+from model import Model
+
 if __name__ == "__main__":
-    main()
+    main(Model)
+
