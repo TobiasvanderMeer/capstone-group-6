@@ -23,7 +23,7 @@ The file might contain a postfix, this allows saving multiple different trained 
 - **model_best.pt**: same at model_last.pt, bust this is the model with the lowest loss on the test set.
 - **convergence_plot.png**: This show the convergence during training. Can also have postfix
 
-### other files
+### important files
 - **train.py:** This is the code that trains the models.
 Change the variable model_id to train different models.
 The training setting are imported from the model in the models folder.
@@ -34,17 +34,20 @@ Change the flags at the start to see different things.
 - **dataset_gen.py:** Generates the dataset.
 Change the seed to generates different parts of the data.
 - **inference.py:** This contains a framework for easy inference.
-- **badness_predictor.py:** This file contains a function that tries to predics when the model will be bad (when the conductivity is low).
-the result can be seen by running performance_analyser.py with the flag SHOW_BADNESS_SCORE = True
 - **analysis.py:** Analyse the performence of the models on the validation set.
 Again change the variables model_id and postfix to choose wich model to analyse.
 This one is outdated and you should use performance_analyser.py for most purposes.
-- **boundry_plot.py:** plots the value of the predictions at the boundaries to see if the boundary conditions are met.
 - **jeffrey_code.py:** This is the code that was provided by out client Jeffrey.
 It is sightly modified such that we can import it from other python files.
 This file also include the darcy solver that we use to generate the date.
 - **utils.py:** Contains code that can be used to easely import the datasets.
 Also defines the train-val_test split
+- **darcy_solver_timer.py**: Measures the time that the darcy solver takes to solve the problems
+
+
+### other files
 - **compare_time.py:** Compares the inference time of our models to the darcy solver.
 This one is outdated and you should use performance_analyser.py 
-
+- **boundry_plot.py:** plots the value of the predictions at the boundaries to see if the boundary conditions are met.
+- **badness_predictor.py:** This file contains a function that tries to predics when the model will be bad (when the conductivity is low).
+the result can be seen by running performance_analyser.py with the flag SHOW_BADNESS_SCORE = True
