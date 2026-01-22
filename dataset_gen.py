@@ -1,7 +1,7 @@
 from jeffrey_code import hydraulic_conductivity_field, solve_darcy_flow, source_function
 import numpy as np
 
-n = 64
+n = 60
 
 def generate_data(seeds):
     x = np.empty((len(seeds), n**2))

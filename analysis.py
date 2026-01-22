@@ -4,7 +4,7 @@ import utils
 import torch
 
 # Which prediction file to visualize (change these two):
-model_id = "unet44"
+model_id = "unet88"
 postfix = ""  # use "" for no postfix
 
 n = 64 if model_id in ["unet88", "unet44"] else 60  # choose the right resolution

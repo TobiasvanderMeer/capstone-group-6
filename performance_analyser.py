@@ -7,7 +7,7 @@ from inference import Predictor
 import utils
 
 BATCH_SIZE = 50
-PLOT_RESULTS = False
+PLOT_RESULTS = True
 
 print("loading data")
 true_test_x = torch.tensor(utils.load_x_true_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
@@ -16,8 +16,9 @@ true_test_y = torch.tensor(utils.load_y_true_test().reshape((-1, 60, 60)), dtype
 true_test_x64 = torch.tensor(utils.load_x_true_test64().reshape((-1, 1, 64, 64)), dtype=torch.float)
 true_test_y64 = torch.tensor(utils.load_y_true_test64().reshape((-1, 64, 64)), dtype=torch.float)
 
-models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60),
-          ("unet", "", 64), ("unet88", "", 64), ("unet44", "", 64)]
+#models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60),
+#          ("unet", "", 64), ("unet88", "", 64), ("unet44", "", 64)]
+models = [("unet88", "", 64), ("unet44", "", 64)]
 
 for i, (model_id, postfix, n) in enumerate(models):
     print("model: ", model_id, postfix)
