@@ -1,5 +1,12 @@
 # capstone-group-6
 
+# Large Files
+we could not upload the files larger than 100Mb to GitHub, so these are availeble via this link:
+https://tud365-my.sharepoint.com/:u:/g/personal/trvandermeer_tudelft_nl/IQBklB_QJqL1SZzI2HjWr7jAAaAZeOYnuJpacYzKatFQ9So?e=SF2JBS
+The files in this zip are in the same file location as where they should be placed in the repo.
+
+
+
 The repo is structured like this:
 ### datasets
 the datasets folder contains the datasets, h_set is the hydraulic head (output) and k_set is the conductivity (input).

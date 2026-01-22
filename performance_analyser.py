@@ -9,14 +9,16 @@ import badness_predictor
 
 BATCH_SIZE = 50
 PLOT_RESULTS = False  # show each sample prediction in a plot
+# this shows the samples in order of decreasing error. usefull for investigating outliers. only does something if above is true
 SHOW_ORDERED_BY_ERROR = False
 SHOW_BADNESS_SCORE_PLOT = False  # only does something if above is true
-TEST_ON_GPU = False
-SHOW_MODEL_INFO = True  # show a convergence plot
+TEST_ON_GPU = True
+SHOW_MODEL_INFO = False  # show a convergence plot
 
-#models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60), ("unet", "", 64),
-#          ("unet88", "", 64), ("unet44", "", 64), ("unet44_noglob", "", 64), ("cnn_fc64", "_b16", 64)]
-models = [("unet44_noglob", "", 64)]
+# what models to check. If
+models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60), ("unet", "", 64),
+          ("unet88", "", 64), ("unet44", "", 64), ("unet44_noglob", "", 64), ("cnn_fc64", "_b16", 64)]
+#models = [("unet44_noglob", "", 64), ("unet44", "", 64)]
 
 print("loading data")
 true_test_x = torch.tensor(utils.load_x_true_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
