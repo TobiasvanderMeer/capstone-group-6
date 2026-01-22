@@ -38,6 +38,8 @@ There are two functions for the training, one for the cnn's and one for the unet
 A variable in the model.py determines what code is used
 - **performance_analyser.py:** Analyse the performance of the models.
 Change the flags at the start to see different things.
+This file can be used to find the MAE on the true test set, 
+show the interactive convergence plot, time the speed of the models and even more.
 - **dataset_gen.py:** Generates the dataset.
 Change the seed to generates different parts of the data.
 - **inference.py:** This contains a framework for easy inference.
