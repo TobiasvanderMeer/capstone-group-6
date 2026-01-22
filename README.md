@@ -66,7 +66,7 @@ the result can be seen by running performance_analyser.py with the flag SHOW_BAD
 
 ## How to run the code
 ### Generate data
-Go to dataset_gen.py, set n to the resolution you want (should be 60 or 62). 
+Go to dataset_gen.py, set n to the resolution you want (should be 60 or 64). 
 Next set start_seed and stop_seed to the seeds you want to use (we used seeds 0 to 10000 in batches of 1000).
 Next run the code, the data will be stored in the datasets folder.
 
