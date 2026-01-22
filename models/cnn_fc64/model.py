@@ -3,10 +3,22 @@ from torch import nn
 
 train_mode = 'default2'
 
-training_settings = {"epochs": 400,
-                     "lr": 2e-5,
-                     "postfix": "_b50",
+#training_settings = {"epochs": 400,
+#                     "lr": 2e-5,
+#                     "postfix": "_b50",
+#                     "batch_size": 50,
+#                     "size": 64}
+
+training_settings = {"epochs": 160,
+                     "lr": 1e-4,
+                     "postfix": "_b50_2",
                      "batch_size": 50,
+                     "size": 64}
+
+training_settings = {"epochs": 160,
+                     "lr": 1e-4,
+                     "postfix": "_b16",
+                     "batch_size": 16,
                      "size": 64}
 
 class Model(nn.Module):

@@ -4,8 +4,8 @@ import utils
 import torch
 
 # Which prediction file to visualize (change these two):
-model_id = "cnn12c"
-postfix = ""  # use "" for no postfix
+model_id = "cnn_fc64"
+postfix = "_b50"  # use "" for no postfix
 
 n = 64 if model_id in ["unet88", "unet44"] else 60  # choose the right resolution
 

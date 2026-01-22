@@ -12,7 +12,7 @@ def load_files(filename: str, file_ids: list[str]):
 # these because then all models need to be retrained probably.
 train_file_ids = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000",
                   "_7000to8000"]
-train_file_ids64 = ["0", "1", "2", "3", "4",]
+train_file_ids64 = ["0", "1", "2", "3", "4", "5"]
 test_file_ids = ["_1000to1050", "_1050to1400"]
 test_file_ids64 = ["6", "7"]
 true_test_ids = ["_8000to9000", "_9000to10000"]

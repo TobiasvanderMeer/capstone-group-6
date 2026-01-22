@@ -5,10 +5,14 @@ import matplotlib.pyplot as plt
 
 from inference import Predictor
 import utils
+import badness_predictor
 
 BATCH_SIZE = 50
-PLOT_RESULTS = True
-SHOW_ORDERED_BY_ERROR = True
+PLOT_RESULTS = False
+SHOW_ORDERED_BY_ERROR = False
+SHOW_BADNESS_SCORE_PLOT = True
+TEST_ON_GPU = True
+SHOW_MODEL_INFO = True
 
 print("loading data")
 true_test_x = torch.tensor(utils.load_x_true_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
@@ -17,9 +21,9 @@ true_test_y = torch.tensor(utils.load_y_true_test().reshape((-1, 60, 60)), dtype
 true_test_x64 = torch.tensor(utils.load_x_true_test64().reshape((-1, 1, 64, 64)), dtype=torch.float)
 true_test_y64 = torch.tensor(utils.load_y_true_test64().reshape((-1, 64, 64)), dtype=torch.float)
 
-#models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60),
-#          ("unet", "", 64), ("unet88", "", 64), ("unet44", "", 64)]
-models = [("cnn_fc", "_b50", 60)]
+models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60),
+          ("unet", "", 64), ("unet88", "", 64), ("unet44", "", 64), ("cnn_fc64", "_b16", 64)]
+#models = [("unet88", "", 64)]
 
 for i, (model_id, postfix, n) in enumerate(models):
     print("model: ", model_id, postfix)
@@ -31,12 +35,24 @@ for i, (model_id, postfix, n) in enumerate(models):
         x_set = true_test_x64
         y_set = true_test_y64
 
+    x_set_np = x_set.detach().numpy()
     y_set_np = y_set.detach().numpy()
 
     prediction = np.empty(y_set.shape)
 
     setup_time = time.time()
-    predictor = Predictor(model_id, postfix, n)
+    predictor = Predictor(model_id, postfix, n, use_gpu=TEST_ON_GPU)
+    if SHOW_MODEL_INFO:
+        print("showing model info. Turn off SHOW_MODEL_INFO to hide")
+        print(f" number of trainable parameters {sum([i.numel() for i in predictor.model.parameters()])}")
+        ckpt = predictor.ckpt
+        print(f"this model was trained in {ckpt["training_time"] if "training_time" in ckpt else "Unknown"}s")
+        if "train_loss_history" in ckpt:
+            plt.plot(ckpt["train_loss_history"])
+            plt.plot(ckpt["test_loss_history"])
+            plt.legend(["train_loss", "test_loss"])
+            plt.show()
+
 
     start_time = time.time()
     for j in range((x_set.shape[0] - 1)//BATCH_SIZE + 1):
@@ -44,7 +60,6 @@ for i, (model_id, postfix, n) in enumerate(models):
         if j == 0:
             first_batch_time = time.time()
     end_time = time.time()
-    print(np.mean(prediction), np.mean(y_set_np))
     MAE = np.mean(np.abs(prediction-y_set_np))
     print("MAE:", MAE)
     print(f"total time: {end_time-setup_time:.4f}s, "
@@ -60,8 +75,16 @@ for i, (model_id, postfix, n) in enumerate(models):
         if SHOW_ORDERED_BY_ERROR:
             # show the samples in order of decreasing MAE (useful for investigating outliers)
             MAEs = np.mean(np.abs(y_set_np - prediction), axis=(1, 2))
-            plt.plot(MAEs, "o")
-            plt.show()
+            if SHOW_BADNESS_SCORE_PLOT:
+                badnesses = badness_predictor.badness_score(x_set_np)
+                badness_threshold = 0
+                print(f"{len(np.where(badnesses < badness_threshold)[0])} samples are dropped by the threshold")
+                print("MAE with threshold", np.mean(MAEs[np.where(badnesses > badness_threshold)]))
+                plt.scatter(badnesses, np.log(MAEs), 5)
+                plt.ylabel("log(MAE)")
+                plt.xlabel("log(min(k_at_border)")
+                plt.show()
+
             order = [list(MAEs).index(i) for i in sorted(list(MAEs), reverse=True)]
         else:
             # this show the samples in order of the dataset

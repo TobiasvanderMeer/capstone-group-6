@@ -26,7 +26,7 @@ class Model(nn.Module):
     Includes global injection in bottleneck.
     """
 
-    def __init__(self, base_ch: int = 64, enforce_dirichlet_row0: bool = False):
+    def __init__(self, base_ch: int = 64, enforce_dirichlet_row0: bool = True):
         super().__init__()
         self.enforce_dirichlet_row0 = enforce_dirichlet_row0
 

@@ -26,17 +26,17 @@ class Predictor:
 
         # Load model checkpoint
         ckpt_path = out_dir / f"model_last{postfix}.pt"
-        ckpt = torch.load(ckpt_path, map_location=self.device)
+        self.ckpt = torch.load(ckpt_path, map_location=self.device)
 
         self.n = n
 
         self.model = model_file.Model().to(self.device)
-        self.model.load_state_dict(ckpt["model_state_dict"])
+        self.model.load_state_dict(self.ckpt["model_state_dict"])
         self.model.eval()
 
-        self.logk_center = ckpt["norm"]["logk_center"]
-        self.h_mean = ckpt["norm"]["h_mean"]
-        self.h_std = ckpt["norm"]["h_std"]
+        self.logk_center = self.ckpt["norm"]["logk_center"]
+        self.h_mean = self.ckpt["norm"]["h_mean"]
+        self.h_std = self.ckpt["norm"]["h_std"]
 
     def predict(self, kappa):
         # Predicted hydraulic head
