@@ -8,11 +8,15 @@ import utils
 import badness_predictor
 
 BATCH_SIZE = 50
-PLOT_RESULTS = False
+PLOT_RESULTS = False  # show each sample prediction in a plot
 SHOW_ORDERED_BY_ERROR = False
-SHOW_BADNESS_SCORE_PLOT = True
-TEST_ON_GPU = True
-SHOW_MODEL_INFO = True
+SHOW_BADNESS_SCORE_PLOT = False  # only does something if above is true
+TEST_ON_GPU = False
+SHOW_MODEL_INFO = True  # show a convergence plot
+
+#models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60), ("unet", "", 64),
+#          ("unet88", "", 64), ("unet44", "", 64), ("unet44_noglob", "", 64), ("cnn_fc64", "_b16", 64)]
+models = [("unet44_noglob", "", 64)]
 
 print("loading data")
 true_test_x = torch.tensor(utils.load_x_true_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
@@ -20,10 +24,6 @@ true_test_y = torch.tensor(utils.load_y_true_test().reshape((-1, 60, 60)), dtype
 
 true_test_x64 = torch.tensor(utils.load_x_true_test64().reshape((-1, 1, 64, 64)), dtype=torch.float)
 true_test_y64 = torch.tensor(utils.load_y_true_test64().reshape((-1, 64, 64)), dtype=torch.float)
-
-models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60),
-          ("unet", "", 64), ("unet88", "", 64), ("unet44", "", 64), ("cnn_fc64", "_b16", 64)]
-#models = [("unet88", "", 64)]
 
 for i, (model_id, postfix, n) in enumerate(models):
     print("model: ", model_id, postfix)
@@ -42,11 +42,12 @@ for i, (model_id, postfix, n) in enumerate(models):
 
     setup_time = time.time()
     predictor = Predictor(model_id, postfix, n, use_gpu=TEST_ON_GPU)
+
+    print(f"number of trainable parameters {sum([i.numel() for i in predictor.model.parameters()])}")
+    ckpt = predictor.ckpt
+    print(f"this model was trained in {ckpt["training_time"] if "training_time" in ckpt else "Unknown"}s")
     if SHOW_MODEL_INFO:
-        print("showing model info. Turn off SHOW_MODEL_INFO to hide")
-        print(f" number of trainable parameters {sum([i.numel() for i in predictor.model.parameters()])}")
-        ckpt = predictor.ckpt
-        print(f"this model was trained in {ckpt["training_time"] if "training_time" in ckpt else "Unknown"}s")
+        print("showing model convergence. Turn off SHOW_MODEL_INFO to hide this")
         if "train_loss_history" in ckpt:
             plt.plot(ckpt["train_loss_history"])
             plt.plot(ckpt["test_loss_history"])
@@ -61,7 +62,7 @@ for i, (model_id, postfix, n) in enumerate(models):
             first_batch_time = time.time()
     end_time = time.time()
     MAE = np.mean(np.abs(prediction-y_set_np))
-    print("MAE:", MAE)
+    print("MAE of all samples:", MAE)
     print(f"total time: {end_time-setup_time:.4f}s, "
           f"avg time per batch: {(end_time - start_time)/x_set.shape[0]*1000*BATCH_SIZE:.2f}ms, "
           f"setup: {start_time - setup_time:.3f}s, "
@@ -80,6 +81,9 @@ for i, (model_id, postfix, n) in enumerate(models):
                 badness_threshold = 0
                 print(f"{len(np.where(badnesses < badness_threshold)[0])} samples are dropped by the threshold")
                 print("MAE with threshold", np.mean(MAEs[np.where(badnesses > badness_threshold)]))
+
+                # this plot shows the log of the MAE on the y-axis and the log minimum value of the conductivity near
+                # the border on the x-axis
                 plt.scatter(badnesses, np.log(MAEs), 5)
                 plt.ylabel("log(MAE)")
                 plt.xlabel("log(min(k_at_border)")

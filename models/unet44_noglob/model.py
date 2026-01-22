@@ -1,10 +1,12 @@
+# unet_4x4.py
 # U-Net for 64x64 -> 64x64 regression (logK -> normalized head)
 # Depth: 4 pools => bottleneck at 4x4
 
 import torch
 from torch import nn
 
-train_mode = 'unet'  # unet should also work
+train_mode = 'unet'
+
 
 class ConvBlock(nn.Module):
     def __init__(self, in_ch: int, out_ch: int):
@@ -24,7 +26,7 @@ class Model(nn.Module):
     U-Net for 64x64 grid with 4 downsampling steps:
     64 -> 32 -> 16 -> 8 -> 4 bottleneck
 
-    Includes 'Global Brain' injection in bottleneck.
+    NO global injection.
     """
 
     def __init__(self, base_ch: int = 64, enforce_dirichlet_row0: bool = True):
@@ -52,18 +54,6 @@ class Model(nn.Module):
 
         # Bottleneck: 4x4
         self.center = ConvBlock(8 * base_ch, 16 * base_ch)
-
-        # ================= Global Injection =================
-        self.global_pool = nn.AdaptiveAvgPool2d(1)  # (N, C, 4, 4) -> (N, C, 1, 1)
-        feature_ch = 16 * base_ch
-
-        self.global_dense = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(feature_ch, feature_ch),
-            nn.ReLU(inplace=True),
-            nn.Linear(feature_ch, feature_ch),
-            nn.Unflatten(1, (feature_ch, 1, 1))
-        )
 
         # ================= Decoder =================
         # 4 -> 8
@@ -101,11 +91,6 @@ class Model(nn.Module):
         x_center = self.pool4(x4)        # 4x4
         x_center = self.center(x_center) # 4x4
 
-        # Global injection
-        global_feat = self.global_pool(x_center)
-        global_feat = self.global_dense(global_feat)
-        x_center = x_center + global_feat
-
         # ----- Decoder -----
         d4 = self.up4(x_center)          # 8x8
         d4 = torch.cat([d4, x4], dim=1)
@@ -126,11 +111,9 @@ class Model(nn.Module):
         out = self.out(d1)
 
         if self.enforce_dirichlet_row0:
-            # (optioneel veiliger voor autograd)
             out = out.clone()
             out[:, :, 0, :] = self.dirichlet_row0_value
 
         return out
 
-def custom_train():
-    print("not implemented")
+

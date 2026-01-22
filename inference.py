@@ -6,6 +6,8 @@ from pathlib import Path
 
 np.random.seed(42)
 
+#this file can be imported to easily use our models for inference, with only two lines of code. see main() for an example of how to use this.
+
 from jeffrey_code import hydraulic_conductivity_field, source_function
 
 class Predictor:
