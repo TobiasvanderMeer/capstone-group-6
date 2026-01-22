@@ -2,7 +2,7 @@
 
 # Large Files
 we could not upload the files larger than 100Mb to GitHub, so these are availeble via this link:
-https://tud365-my.sharepoint.com/:u:/g/personal/trvandermeer_tudelft_nl/IQBklB_QJqL1SZzI2HjWr7jAAaAZeOYnuJpacYzKatFQ9So?e=SF2JBS
+https://tud365-my.sharepoint.com/:u:/g/personal/trvandermeer_tudelft_nl/IQB5xcJwk_3ITIARwehaqtUHAcz325pfvVYoSpKfyuKQ1Zk?e=0aaPuh
 The files in this zip are in the same file location as where they should be placed in the repo. This Includes the model parameter of the models unet44_noglob, unet44 and cnn_fc64
 
 
@@ -75,7 +75,7 @@ Go to train.py, set model_id to the model you want to train. Run the code.
 train.py will load the model and training setting from the folder in models with the name model_id.
 The settings that were used to train the models are stored in the model.py file as a variable.
 The results of the training will also be stored in this folder.
-Be careful with training models, because even if you dont let the training finish it will still overwrite the previously trained models.
+Be careful with training models, because even if you dont let the training finish it can still overwrite the previously trained models.
 
 ### Run inference on trained models
 inference contains a class that can be used te very easily do this.
