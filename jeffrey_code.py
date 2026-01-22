@@ -1,5 +1,5 @@
 ## Import libraries
-
+#This is the code our supervisor delivered to us
 import numpy as np
 import matplotlib.pyplot as plt
 

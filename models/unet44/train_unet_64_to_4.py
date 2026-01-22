@@ -16,9 +16,9 @@ import torch
 from torch import nn
 
 
-# ============================================================
+
 # Config
-# ============================================================
+
 
 # Batch files: datasets/k_set_64x64_batch{i}.txt
 TRAIN_BATCH_IDS = list(range(0, 6))  
@@ -52,9 +52,9 @@ PRED_BATCH_TEST = 32
 SEED = 0
 
 
-# ============================================================
+
 # Data loading
-# ============================================================
+
 
 def load_batches(prefix: str, batch_ids: list[int]) -> np.ndarray:
     parts = []
@@ -79,17 +79,16 @@ def predict_in_batches(model: nn.Module, z: torch.Tensor, batch_size: int) -> np
     return out
 
 
-# ============================================================
+
 # Main
-# ============================================================
+
 
 def main(UNet64) -> None:
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
-    # -------------------------
+
     # Load data
-    # -------------------------
     x = load_batches("k_set_64x64", TRAIN_BATCH_IDS)
     y = load_batches("h_set_64x64", TRAIN_BATCH_IDS)
 
@@ -109,9 +108,8 @@ def main(UNet64) -> None:
     z_test = torch.log(x_test) - LOGK_CENTER
     y_test = (y_test - H_MEAN) / H_STD
 
-    # -------------------------
+ 
     # Device
-    # -------------------------
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     #device = "cpu"
     print("using device:", device)
@@ -121,9 +119,9 @@ def main(UNet64) -> None:
     z_test = z_test.to(device)
     y_test = y_test.to(device)
 
-    # -------------------------
+    
     # Model
-    # -------------------------
+
     model = UNet64(
         base_ch=BASE_CH,
         enforce_dirichlet_row0=ENFORCE_DIRICHLET_ROW0
@@ -149,9 +147,9 @@ def main(UNet64) -> None:
     baseline = torch.mean((y_test - mean_field) ** 2).item()
     print("baseline loss:", baseline)
 
-    # -------------------------
+  
     # Checkpoints
-    # -------------------------
+    
     out_dir = Path("models/unet44")
     out_dir.mkdir(exist_ok=True)
 
@@ -161,9 +159,8 @@ def main(UNet64) -> None:
 
     idx_all = np.arange(z.shape[0])
 
-    # -------------------------
+    
     # Training loop
-    # -------------------------
     for epoch in range(1, N_EPOCHS + 1):
         t0 = time.time()
         model.train()
@@ -233,9 +230,8 @@ def main(UNet64) -> None:
             print(f"early stopping (best epoch {best_epoch}, loss {best_test:.6f})")
             break
 
-    # -------------------------
+
     # Export predictions
-    # -------------------------
     best = torch.load(out_dir / "model_best.pt", map_location=device)
     model.load_state_dict(best["model_state_dict"])
     model.eval()

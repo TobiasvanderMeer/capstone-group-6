@@ -20,9 +20,7 @@ import matplotlib.pyplot as plt
 import utils
 
 
-# -----------------------------
-# CONFIG (edit these if needed)
-# -----------------------------
+
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "datasets"
 
@@ -48,9 +46,9 @@ LOAD_TRAIN_FULL = True
 MAX_SAMPLE_VALUES = 500_000  # number of pixel values to sample for quantile estimates
 
 
-# -----------------------------
+
 # Helpers
-# -----------------------------
+
 def _file_exists_or_warn(path: Path) -> bool:
     if path.exists():
         return True
@@ -199,9 +197,7 @@ def plot_triplet(logk: np.ndarray, h_true: np.ndarray, h_pred: np.ndarray | None
     plt.show()
 
 
-# -----------------------------
-# Main
-# -----------------------------
+
 def main() -> None:
     rng = np.random.default_rng(0)
 
@@ -226,9 +222,7 @@ def main() -> None:
     if k_train is not None:
         print("  train:", k_train.shape, h_train.shape, "| k_nan:", np.isnan(k_train).any(), "| h_nan:", np.isnan(h_train).any())
 
-    # -----------------------------
-    # Which edge is actually the fixed (constant) boundary?
-    # -----------------------------
+
     h = h_test  # (N, 60, 60)
 
     edges = {

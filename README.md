@@ -3,7 +3,7 @@
 # Large Files
 we could not upload the files larger than 100Mb to GitHub, so these are availeble via this link:
 https://tud365-my.sharepoint.com/:u:/g/personal/trvandermeer_tudelft_nl/IQBklB_QJqL1SZzI2HjWr7jAAaAZeOYnuJpacYzKatFQ9So?e=SF2JBS
-The files in this zip are in the same file location as where they should be placed in the repo.
+The files in this zip are in the same file location as where they should be placed in the repo. This Includes the model parameter of the models unet44_noglob, unet44 and cnn_fc64
 
 
 

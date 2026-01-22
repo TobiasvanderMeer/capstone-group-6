@@ -17,9 +17,8 @@ def darcy_physics_informed_loss(
     # 1. Data loss (normalized)
     loss_data = F.mse_loss(y_pred, y_true)
 
-    # ------------------------
     # 2. Darcy PDE residual
-    # ------------------------
+
     B, H, W = y_pred.shape
     h = y_pred.unsqueeze(1)  # (B,1,H,W)
     device = h.device

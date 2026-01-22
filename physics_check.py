@@ -36,9 +36,7 @@ from scipy.sparse.linalg import spsolve
 
 import utils
 
-# -----------------------------
-# CONFIG
-# -----------------------------
+
 DATASET_DIR = "datasets"
 
 # Prediction file
@@ -76,9 +74,8 @@ N_PLOT_SAMPLES = 3
 EPS = 1e-12
 
 
-# -----------------------------
 # Jeffrey source function (same logic as jeffrey_code.py)
-# -----------------------------
+
 def source_function(n: int) -> np.ndarray:
     dx = L / (n - 1)
 
@@ -99,9 +96,8 @@ def source_function(n: int) -> np.ndarray:
     return f
 
 
-# -----------------------------
-# IO helpers
-# -----------------------------
+
+
 def _load_txt(path: str) -> np.ndarray:
     a = np.loadtxt(path, dtype=np.float64)
     if a.ndim == 1:
@@ -130,16 +126,15 @@ def load_predictions() -> np.ndarray:
     return pred
 
 
-# -----------------------------
 # Harmonic face k
-# -----------------------------
+
 def harmonic_mean(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return (2.0 * a * b) / (a + b + EPS)
 
 
-# -----------------------------
+
 # Build A and b exactly like jeffrey_code.solve_darcy_flow
-# -----------------------------
+
 def build_system_matrix(kappa_flat: np.ndarray, f_flat: np.ndarray, n: int):
     dx = L / (n - 1)
     b = f_flat.astype(np.float64) * (dx ** 2)
@@ -241,9 +236,9 @@ def build_system_matrix(kappa_flat: np.ndarray, f_flat: np.ndarray, n: int):
     return A.tocsr(), b
 
 
-# -----------------------------
+
 # Physics checks
-# -----------------------------
+
 def boundary_checks(K: np.ndarray, h: np.ndarray) -> dict:
     """
     K, h: (samples, y, x) with y=j and x=i (same indexing as jeffrey_code.py)
@@ -350,9 +345,7 @@ def main():
 
     print(f"Loaded {n_samples} samples. Grid: N={N}, L={L}, DX={DX:.6f}")
 
-    # -------------------------
     # [0] Basic accuracy
-    # -------------------------
     err = h_pred - h_true
     rmse = float(np.sqrt(np.mean(err ** 2)))
     mae = float(np.mean(np.abs(err)))
@@ -367,18 +360,18 @@ def main():
     # Source vector
     f = source_function(N)
 
-    # -------------------------
+
     # [1] Boundary checks
-    # -------------------------
+
     print("\n[1] Boundary checks (True vs Pred)")
     bc_true = boundary_checks(K, h_true)
     bc_pred = boundary_checks(K, h_pred)
     for k in bc_true:
         print(f"{k:32s} | true: {bc_true[k]:.6f}  pred: {bc_pred[k]:.6f}")
 
-    # -------------------------
+
     # [2] Global mass balance
-    # -------------------------
+
     print("\n[2] Global mass balance: net outward boundary flux ≈ total source integral")
     diff_true, rel_true, S_total = global_mass_balance(K, h_true, f)
     diff_pred, rel_pred, _ = global_mass_balance(K, h_pred, f)
@@ -387,9 +380,8 @@ def main():
     print(f"True: mean(Q_out - S) = {diff_true.mean():.6f}, mean|.| = {np.mean(np.abs(diff_true)):.6f}, mean rel = {rel_true.mean():.6e}")
     print(f"Pred: mean(Q_out - S) = {diff_pred.mean():.6f}, mean|.| = {np.mean(np.abs(diff_pred)):.6f}, mean rel = {rel_pred.mean():.6e}")
 
-    # -------------------------
+
     # [3] Discrete PDE residual + projection distance (subset)
-    # -------------------------
     print("\n[3] Discrete PDE residual r = A h - b (subset)")
     idxs = np.linspace(0, n_samples - 1, min(N_RESIDUAL_SAMPLES, n_samples), dtype=int)
 
@@ -421,9 +413,9 @@ def main():
     if proj_err:
         print(f"Projection distance: mean ||delta||/||h_true|| = {np.mean(proj_err):.6e}, median = {np.median(proj_err):.6e}")
 
-    # -------------------------
+
     # [4] Plots (optional)
-    # -------------------------
+
     if DO_PLOTS:
         print("\n[4] Plotting a few samples (true / pred / residual)...")
         plot_idxs = np.linspace(0, n_samples - 1, min(N_PLOT_SAMPLES, n_samples), dtype=int)

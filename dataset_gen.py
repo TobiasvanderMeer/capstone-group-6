@@ -2,7 +2,7 @@ from jeffrey_code import hydraulic_conductivity_field, solve_darcy_flow, source_
 import numpy as np
 
 n = 60
-
+#this code generate the data
 def generate_data(seeds):
     x = np.empty((len(seeds), n**2))
     y = np.empty((len(seeds), n**2))

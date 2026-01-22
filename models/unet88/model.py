@@ -32,7 +32,7 @@ class Model(nn.Module):
 
         in_ch = 1
 
-        # ================= Encoder =================
+        #  Encoder 
         # 64x64
         self.enc1 = ConvBlock(in_ch, base_ch)
         self.pool1 = nn.MaxPool2d(2)  # 64 -> 32
@@ -48,7 +48,7 @@ class Model(nn.Module):
         # Bottleneck 8x8
         self.center = ConvBlock(4 * base_ch, 8 * base_ch)
 
-        # ================= Global Injection =================
+        #Global Injection
         self.global_pool = nn.AdaptiveAvgPool2d(1)
         feature_ch = 8 * base_ch
 
@@ -60,7 +60,7 @@ class Model(nn.Module):
             nn.Unflatten(1, (feature_ch, 1, 1))
         )
 
-        # ================= Decoder =================
+        #  Decoder 
         # 8 -> 16
         self.up3 = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
         self.dec3 = ConvBlock(8 * base_ch + 4 * base_ch, 4 * base_ch)
@@ -80,12 +80,12 @@ class Model(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x: (N, 1, 64, 64)
 
-        # ----- Encoder -----
+        # Encoder 
         x1 = self.enc1(x)                 # 64x64
         x2 = self.enc2(self.pool1(x1))    # 32x32
         x3 = self.enc3(self.pool2(x2))    # 16x16
 
-        # ----- Bottleneck -----
+        # Bottleneck
         x_center = self.pool3(x3)         # 8x8
         x_center = self.center(x_center)
 
@@ -94,7 +94,7 @@ class Model(nn.Module):
         global_feat = self.global_dense(global_feat)
         x_center = x_center + global_feat
 
-        # ----- Decoder -----
+        # Decoder 
         d3 = self.up3(x_center)           # 16x16
         d3 = torch.cat([d3, x3], dim=1)
         d3 = self.dec3(d3)

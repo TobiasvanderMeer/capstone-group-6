@@ -39,9 +39,8 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
     print(torch.mean((y - torch.mean(y, dim=0))**2))
     print(torch.mean(y))
 
-    # -------------------------
     # Device (GPU if available)
-    # -------------------------
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("using device:", device)
 
@@ -55,9 +54,8 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
     out_dir = Path("models") / model_id
     out_dir.mkdir(exist_ok=True)
 
-    # -------------------------
     # Model / loss / optimizer
-    # -------------------------
+
 
     model = model_file.Model().to(device)
     print([i.numel() for i in model.parameters()], sum([i.numel() for i in model.parameters()]))
@@ -93,9 +91,9 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
     baseline = loss_fn(torch.mean(y, dim=0, keepdim=True), y_test).item()
     print("baseline loss:", baseline)
 
-    # -------------------------
+
     # Training loop
-    # -------------------------
+
     batch_idx = np.arange(z.shape[0])  # this one is used to shuffle the dataset
 
     for epoch in range(1, n_epochs + 1):
@@ -134,9 +132,9 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
         train_losses.append(train_loss)
         test_losses.append(test_loss)
 
-        # -------------------------
+   
         # Save checkpoints (last + best)
-        # -------------------------
+ 
         ckpt = {
             "epoch": epoch,
             "model_state_dict": model.state_dict(),
@@ -148,7 +146,7 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
             "baseline_loss": baseline,
             "training_time": total_train_time,
             # Normalization constants used in this code:
-            "norm": {"logk_center": 4.0, "h_mean": 146, "h_std": 37},  # TODO this is not equal for all models
+            "norm": {"logk_center": 4.0, "h_mean": 146, "h_std": 37}, 
             # Helpful metadata:
             "train_file_ids": utils.train_file_ids,
             "test_file_ids": utils.test_file_ids,
@@ -160,9 +158,9 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
             torch.save(ckpt, out_dir / f"model_best{postfix}.pt")
 
     print(f"finished training. Total training time: {total_train_time:.1f} seconds")
-    # -------------------------
+   
     # Save predictions
-    # -------------------------
+
     best = torch.load(out_dir / f"model_best{postfix}.pt", map_location=device)
     model.load_state_dict(best["model_state_dict"])
 
@@ -185,9 +183,7 @@ def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
 
 
 def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
-    # ============================================================
-    # Config
-    # ============================================================
+  
 
     # Batch files: datasets/k_set_64x64_batch{i}.txt
     TRAIN_BATCH_IDS = list(range(0, 6))
@@ -218,10 +214,9 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
 
     SEED = 0
 
-    # ============================================================
+   
     # Data loading
-    # ============================================================
-
+   
     def load_batches(prefix: str, batch_ids: list[int]) -> np.ndarray:
         parts = []
         for i in batch_ids:
@@ -243,17 +238,11 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
 
         return out
 
-    # ============================================================
-    # Main
-    # ============================================================
 
 
     torch.manual_seed(SEED)
     np.random.seed(SEED)
 
-        # -------------------------
-        # Load data
-        # -------------------------
     x = load_batches("k_set_64x64", TRAIN_BATCH_IDS)
     y = load_batches("h_set_64x64", TRAIN_BATCH_IDS)
 
@@ -273,9 +262,7 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
     z_test = torch.log(x_test) - LOGK_CENTER
     y_test = (y_test - H_MEAN) / H_STD
 
-        # -------------------------
-        # Device
-        # -------------------------
+ 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     #device = "cpu"
     print("using device:", device)
@@ -285,9 +272,7 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
     z_test = z_test.to(device)
     y_test = y_test.to(device)
 
-        # -------------------------
-        # Model
-        # -------------------------
+
     model = model_file.Model(
         base_ch=BASE_CH,
         enforce_dirichlet_row0=ENFORCE_DIRICHLET_ROW0
@@ -313,9 +298,8 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
     baseline = torch.mean((y_test - mean_field) ** 2).item()
     print("baseline loss:", baseline)
 
-        # -------------------------
-        # Checkpoints
-        # -------------------------
+
+    # Checkpoints
     out_dir = Path(f"models/{model_id}")
     out_dir.mkdir(exist_ok=True)
 
@@ -328,9 +312,8 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
     train_losses = []
     test_losses = []
     total_train_time = 0
-        # -------------------------
-        # Training loop
-        # -------------------------
+      
+    # Training loop
     for epoch in range(1, N_EPOCHS + 1):
         t0 = time.time()
         model.train()
@@ -406,9 +389,8 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
             print(f"early stopping (best epoch {best_epoch}, loss {best_test:.6f})")
             break
 
-        # -------------------------
-        # Export predictions
-        # -------------------------
+
+    # Export predictions
     best = torch.load(out_dir / "model_best.pt", map_location=device)
     model.load_state_dict(best["model_state_dict"])
     model.eval()

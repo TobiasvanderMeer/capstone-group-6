@@ -35,8 +35,7 @@ class Model(nn.Module):
 
         self.enforce_dirichlet_row0 = enforce_dirichlet_row0
 
-        # Encoder path
-        # -----------------------
+        # Encoder 
         # Input is 1 channel (logK map)
         in_ch = 1
 
@@ -51,17 +50,13 @@ class Model(nn.Module):
         # Bottleneck: 15x15
         self.center = ConvBlock(2 * base_ch, 4 * base_ch)
 
-        # -----------------------
-        # THE FIX: Global Information Injection
-        # Problem: Standard U-Net sucks at learning the global linear gradient (gravity).
-        # Solution: Squeeze everything to 1x1, learn the bias, add it back.
-        # -----------------------
+        
+        # Global Information Injection
 
-        # 1. Squash 15x15 spatial dims to 1x1.
-        # Prevents parameter explosion (keeps params ~65k instead of 14M).
+        # Squash 15x15 spatial dims to 1x1.
         self.global_pool = nn.AdaptiveAvgPool2d(1)
 
-        feature_ch = 4 * base_ch  # e.g. 256 channels
+        feature_ch = 4 * base_ch 
 
         # 2. MLP to figure out the global slope/offset
         self.global_dense = nn.Sequential(
@@ -72,8 +67,7 @@ class Model(nn.Module):
             nn.Unflatten(1, (feature_ch, 1, 1))  # Reshape to (N, C, 1, 1) for broadcasting
         )
 
-        # Decoder path
-        # -----------------------
+        # Decoder 
 
         # Level 2 Up: 15 -> 30
         self.up2 = nn.Upsample(scale_factor=2, mode="bilinear", align_corners=False)
@@ -86,31 +80,30 @@ class Model(nn.Module):
         # Output projection
         self.out = nn.Conv2d(base_ch, 1, kernel_size=1)
 
-        # Hardcoded boundary value for top row (physically h=100m, normalized)
-        # y = (h - 146) / 37
+        # boundary value
         self.dirichlet_row0_value = (100.0 - 145.3243) / 35.5957
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # x shape: (N, 1, 60, 60)
 
-        # --- Encoder ---
+        #Encoder
         x1 = self.enc1(x)  # 60x60
         x2 = self.enc2(self.pool1(x1))  # 30x30
 
-        # --- Bottleneck ---
+        #Bottleneck
         x_center = self.pool2(x2)  # 15x15
         x_center = self.center(x_center)
 
-        # --- Global Injection ---
+        #Global Injection
         # 1. Get average state of the system
         global_feat = self.global_pool(x_center)
         # 2. Process through dense layer
         global_feat = self.global_dense(global_feat)
         # 3. Add back to feature map (Residual connection)
-        # Broadcasting happens here: (N, C, 15, 15) + (N, C, 1, 1)
+        # Broadcasting: (N, C, 15, 15) + (N, C, 1, 1)
         x_center = x_center + global_feat
 
-        # --- Decoder ---
+        #Decoder
         d2 = self.up2(x_center)
         d2 = torch.cat([d2, x2], dim=1)  # Skip connection
         d2 = self.dec2(d2)
@@ -137,9 +130,8 @@ def custom_train():
     import torch
     from torch import nn
 
-    # -----------------------------
-    # Config (edit here)
-    # -----------------------------
+    
+    # Config
     TRAIN_FILE_IDS = ["0", "_1400to2000", "_2000to3000", "_3000to4000", "_4000to5000", "_5000to6000", "_6000to7000",
                       "_7000to8000"]
     TEST_FILE_IDS = ["_1000to1050", "_1050to1400"]
@@ -151,7 +143,6 @@ def custom_train():
     N_EPOCHS = 80
     BATCH_SIZE = 16
 
-    # Main tuning knobs
     BASE_CH = 64  # try 32, 48, 64
     LR = 3e-4  # try 1e-3, 3e-4, 1e-4
     WEIGHT_DECAY = 1e-5  # try 0, 1e-6, 1e-5, 1e-4
@@ -171,9 +162,8 @@ def custom_train():
 
     SEED = 0
 
-    # -----------------------------
-    # Data loading (same style as cnn.py)
-    # -----------------------------
+    
+    # Data loading 
     def load_files(prefix_path: str, file_ids: list[str]) -> np.ndarray:
         # loadtxt defaults to float64; force float32 to save memory
         parts = [np.loadtxt(prefix_path + fid + ".txt", dtype=np.float32) for fid in file_ids]
@@ -197,25 +187,22 @@ def custom_train():
         torch.manual_seed(SEED)
         np.random.seed(SEED)
 
-        # -------------------------
         # Load and preprocess
-        # -------------------------
         x = torch.tensor(load_files("datasets/k_set", TRAIN_FILE_IDS).reshape((-1, 1, 60, 60)), dtype=torch.float32)
         y = torch.tensor(load_files("datasets/h_set", TRAIN_FILE_IDS).reshape((-1, 60, 60)), dtype=torch.float32)
 
         x_test = torch.tensor(load_files("datasets/k_set", TEST_FILE_IDS).reshape((-1, 1, 60, 60)), dtype=torch.float32)
         y_test = torch.tensor(load_files("datasets/h_set", TEST_FILE_IDS).reshape((-1, 60, 60)), dtype=torch.float32)
 
-        # Normalize exactly like your cnn.py
+        # Normalize
         z = torch.log(x) - LOGK_CENTER
         y = (y - H_MEAN) / H_STD
 
         z_test = torch.log(x_test) - LOGK_CENTER
         y_test = (y_test - H_MEAN) / H_STD
 
-        # -------------------------
+        
         # Device
-        # -------------------------
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         print("using device:", device)
 
@@ -224,9 +211,8 @@ def custom_train():
         z_test = z_test.to(device)
         y_test = y_test.to(device)
 
-        # -------------------------
+
         # Model / loss / optimizer
-        # -------------------------
         model = Model(base_ch=BASE_CH, enforce_dirichlet_row0=ENFORCE_DIRICHLET_ROW0).to(device)
         loss_fn = nn.MSELoss()
 
@@ -248,9 +234,8 @@ def custom_train():
         baseline = torch.mean((y_test - mean_field) ** 2).item()
         print("baseline loss:", baseline)
 
-        # -------------------------
+
         # Checkpoints / logging
-        # -------------------------
         out_dir = Path("models/unet")
         out_dir.mkdir(exist_ok=True)
 
@@ -260,9 +245,8 @@ def custom_train():
 
         batch_idx = np.arange(z.shape[0])
 
-        # -------------------------
+
         # Training loop
-        # -------------------------
         for epoch in range(1, N_EPOCHS + 1):
             t0 = time.time()
 
@@ -334,14 +318,13 @@ def custom_train():
                     f"early stopping: no improvement for {PATIENCE} epochs (best epoch {best_epoch}, best test {best_test:.6f})")
                 break
 
-        # -------------------------
-        # Export predictions from BEST checkpoint (batched)
-        # -------------------------
+
+        # Export predictions from best checkpoint
         best = torch.load(out_dir / "model_best.pt", map_location=device)
         model.load_state_dict(best["model_state_dict"])
         model.eval()
 
-        # Helps when running in PyCharm console (fragmentation / cached blocks)
+
         if device.type == "cuda":
             torch.cuda.empty_cache()
 
