@@ -53,20 +53,24 @@ def random_input(n=60):
     BATCH_SIZE = 16
     seeds = np.random.choice(range(10000), size=BATCH_SIZE, replace=False)
     # Generate random hydraulic conductivity field; replace this with the input
-    kappa = np.empty((BATCH_SIZE, 3600))
+    kappa = np.empty((BATCH_SIZE, n*n))
     for j, seed in enumerate(seeds):
         kappa[j] = hydraulic_conductivity_field(n, seed)
     return kappa
 
 def main():
+    model_id = "cnn_fc64"
+    postfix = "_b16"
+    n = 64
     # make a random input
-    kappa = random_input()
+    kappa = random_input(n)
 
     # make the predictor
-    predictor = Predictor("cnn12c", "_lr6e-5", 60)
+    predictor = Predictor(model_id, postfix, n)
     # this is the inference
     h_pred = predictor.predict(kappa)[0]
 
+    print("showing results")
     # show results
     plt.imshow(h_pred, cmap='hot_r', origin='lower', interpolation='none')
     plt.title(f'Predicted h')

@@ -15,7 +15,7 @@ SHOW_BADNESS_SCORE_PLOT = False  # only does something if above is true
 TEST_ON_GPU = True
 SHOW_MODEL_INFO = True  # show a convergence plot
 
-# what models to check. If
+# what models to check. format: [(model_id, postfix, input_size)] input_size should be 60 or 64
 #models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60), ("unet", "", 64),
 #          ("unet88", "", 64), ("unet44", "", 64), ("unet44_noglob", "", 64), ("cnn_fc64", "_b16", 64)]
 models = [("unet44_noglob", "", 64), ("cnn_fc64", "_b16", 64)]
@@ -51,10 +51,13 @@ for i, (model_id, postfix, n) in enumerate(models):
     if SHOW_MODEL_INFO:
         print("showing model convergence. Turn off SHOW_MODEL_INFO to hide this")
         if "train_loss_history" in ckpt:
+            plt.title(f"convergence_plot {model_id}")
             plt.plot(ckpt["train_loss_history"])
             plt.plot(ckpt["test_loss_history"])
             plt.legend(["train_loss", "test_loss"])
             plt.show()
+        else:
+            print("no convergence plot available for this model")
 
 
     start_time = time.time()
