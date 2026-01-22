@@ -5,7 +5,7 @@
 import torch
 from torch import nn
 
-train_mode = 'custom'
+train_mode = 'custom'  # unet should also work
 
 class ConvBlock(nn.Module):
     def __init__(self, in_ch: int, out_ch: int):
@@ -28,7 +28,7 @@ class Model(nn.Module):
     Includes 'Global Brain' injection in bottleneck.
     """
 
-    def __init__(self, base_ch: int = 32, enforce_dirichlet_row0: bool = False):
+    def __init__(self, base_ch: int = 64, enforce_dirichlet_row0: bool = True):
         super().__init__()
         self.enforce_dirichlet_row0 = enforce_dirichlet_row0
 

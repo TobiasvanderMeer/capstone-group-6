@@ -11,9 +11,15 @@ train_mode = 'default2'
 #                     "lr": 2e-5,
 #                     "postfix": "_lr2e-5"}  # this is the best model (so far) MAE 1.053
 
+#training_settings = {"epochs": 400,
+#                     "lr": 8e-6,
+#                     "postfix": "_lr8e-6"}
+
 training_settings = {"epochs": 400,
-                     "lr": 8e-6,
-                     "postfix": "_lr8e-6"}
+                     "lr": 6e-5,
+                     "postfix": "_b50",
+                     "batch_size": 50,
+                     "size": 60}
 
 class Model(nn.Module):
     # During one of the meetings the idea of putting a fully connected layer behind a convolutional one came up.

@@ -11,7 +11,7 @@ import importlib
 #compatibility
 
 
-model_id = "unet88"  # change this to change different models
+model_id = "cnn_fc64"  # change this to change different models
 
 CONTINUE_FROM_LAST = False  # continue training from a previously saved model
 
@@ -19,15 +19,22 @@ model_file = importlib.import_module(f"models.{model_id}.model")  # this line im
 
 #TODO:  save printed output in a text file in the folder
 
-def default_train(n_epochs, lr, postfix):
-    x = torch.tensor(utils.load_x_train().reshape((-1, 1, 60, 60)), dtype=torch.float)
+def default_train(n_epochs, lr, postfix, batch_size=16, n=60):
+    if n == 60:
+        x = torch.tensor(utils.load_x_train().reshape((-1, 1, n, n)), dtype=torch.float)
+        y = (torch.tensor(utils.load_y_train().reshape((-1, n, n)), dtype=torch.float)-146) / 37
+
+        x_test = torch.tensor(utils.load_x_test().reshape((-1, 1, n, n)), dtype=torch.float)
+        y_test = (torch.tensor(utils.load_y_test().reshape((-1, n, n)), dtype=torch.float) - 146) / 37
+    if n == 64:
+        x = torch.tensor(utils.load_x_train64().reshape((-1, 1, n, n)), dtype=torch.float)
+        y = (torch.tensor(utils.load_y_train64().reshape((-1, n, n)), dtype=torch.float) - 146) / 37
+
+        x_test = torch.tensor(utils.load_x_test64().reshape((-1, 1, n, n)), dtype=torch.float)
+        y_test = (torch.tensor(utils.load_y_test64().reshape((-1, n, n)), dtype=torch.float) - 146) / 37
+
     z = torch.log(x)-4
-    y = (torch.tensor(utils.load_y_train().reshape((-1, 60, 60)), dtype=torch.float)-146) / 37
-
-    x_test = torch.tensor(utils.load_x_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
     z_test = torch.log(x_test) - 4
-    y_test = (torch.tensor(utils.load_y_test().reshape((-1, 60, 60)), dtype=torch.float) - 146) / 37
-
 
     print(torch.mean((y - torch.mean(y, dim=0))**2))
     print(torch.mean(y))
@@ -89,7 +96,6 @@ def default_train(n_epochs, lr, postfix):
     # -------------------------
     # Training loop
     # -------------------------
-    batch_size = 16
     batch_idx = np.arange(z.shape[0])  # this one is used to shuffle the dataset
 
     for epoch in range(1, n_epochs + 1):
@@ -165,7 +171,7 @@ def default_train(n_epochs, lr, postfix):
         pred_test = model(z_test).detach().cpu().numpy()
 
     # the models predictions on the test set (used for analysis)
-    np.savetxt(out_dir / f"pred_test{postfix}.txt", pred_test.reshape((-1, 3600)))
+    np.savetxt(out_dir / f"pred_test{postfix}.txt", pred_test.reshape((-1, n*n)))
 
     print("saved:", f"pred_test{postfix}.txt, model_last{postfix}.pt, model_best.pt{postfix}")
 
@@ -270,8 +276,8 @@ def unet_train(base_ch: int = 64, ENFORCE_DIRICHLET_ROW0: bool = True):
         # -------------------------
         # Device
         # -------------------------
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    device = "cpu"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #device = "cpu"
     print("using device:", device)
 
     z = z.to(device)
@@ -439,8 +445,10 @@ if __name__ == "__main__":
                 postfix = model_file.training_settings["postfix"]
             else:
                 postfix = ""
-            print(f"lr: {lr}, n_epochs: {epochs}, postfix: \"{postfix}\"")
-            default_train(epochs, lr, postfix)
+            batch = model_file.training_settings["batch_size"] if "batch_size" in model_file.training_settings else 16
+            size = model_file.training_settings["size"] if "size" in model_file.training_settings else 60
+            print(f"lr: {lr}, n_epochs: {epochs}, postfix: \"{postfix}\", batch size: {batch}, n: {size}")
+            default_train(epochs, lr, postfix, batch_size=batch, n=size)
 
         case 'unet':
             # this training mode uses the dictionary "training_settings" to store the training parameters.

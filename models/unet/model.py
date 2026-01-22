@@ -4,7 +4,7 @@
 import torch
 from torch import nn
 
-train_mode = 'custom'
+train_mode = 'custom'  # unet should also work
 
 class ConvBlock(nn.Module):
     """

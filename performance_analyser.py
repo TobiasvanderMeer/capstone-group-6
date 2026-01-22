@@ -8,6 +8,7 @@ import utils
 
 BATCH_SIZE = 50
 PLOT_RESULTS = True
+SHOW_ORDERED_BY_ERROR = True
 
 print("loading data")
 true_test_x = torch.tensor(utils.load_x_true_test().reshape((-1, 1, 60, 60)), dtype=torch.float)
@@ -18,7 +19,7 @@ true_test_y64 = torch.tensor(utils.load_y_true_test64().reshape((-1, 64, 64)), d
 
 #models = [("fc1", "", 60), ("cnn_fc", "_lr2e-5", 60), ("cnn12c", "_lr6e-5", 60), ("cnn16", "_test", 60),
 #          ("unet", "", 64), ("unet88", "", 64), ("unet44", "", 64)]
-models = [("unet88", "", 64), ("unet44", "", 64)]
+models = [("cnn_fc", "_b50", 60)]
 
 for i, (model_id, postfix, n) in enumerate(models):
     print("model: ", model_id, postfix)
@@ -56,7 +57,17 @@ for i, (model_id, postfix, n) in enumerate(models):
 
 
     if PLOT_RESULTS:
-        for j in range(x_set.shape[0]):
+        if SHOW_ORDERED_BY_ERROR:
+            # show the samples in order of decreasing MAE (useful for investigating outliers)
+            MAEs = np.mean(np.abs(y_set_np - prediction), axis=(1, 2))
+            plt.plot(MAEs, "o")
+            plt.show()
+            order = [list(MAEs).index(i) for i in sorted(list(MAEs), reverse=True)]
+        else:
+            # this show the samples in order of the dataset
+            order = range(x_set.shape[0])
+
+        for j in order:
             print("MAE: ", np.mean(np.abs(prediction[j]-y_set_np[j])))
             f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, figsize=(12, 4))
 

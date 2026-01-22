@@ -9,12 +9,15 @@ np.random.seed(42)
 from jeffrey_code import hydraulic_conductivity_field, source_function
 
 class Predictor:
-    def __init__(self, model_id, postfix, n):
+    def __init__(self, model_id, postfix, n, use_gpu=True):
 
         model_file = importlib.import_module(f"models.{model_id}.model")  # this line imports the right model and training settings
 
         # Device
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if use_gpu:
+            self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = "cpu"
         print("Using device:", self.device)
 
         # Checkpoint folder

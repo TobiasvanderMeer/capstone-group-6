@@ -18,8 +18,18 @@ def save_data(x, y, id=""):
     np.savetxt(f"datasets/k_set{id}.txt", x.reshape(-1, n*n))
     np.savetxt(f"datasets/h_set{id}.txt", y.reshape(-1, n*n))
 
+
+def save_data64(x, y, id=""):
+    np.savetxt(f"datasets/k_set_64x64_batch{id}.txt", x.reshape(-1, n*n))
+    np.savetxt(f"datasets/h_set_64x64_batch{id}.txt", y.reshape(-1, n*n))
+
+    print(f"Saved batch {id}")
+
 if __name__ == "__main__":
     start_seed, stop_seed = 0, 1000
     print(f"computing seeds {start_seed} to {stop_seed}")
     x, y =generate_data(list(range(start_seed, stop_seed)))
-    save_data(x, y, id=f"_{start_seed}to{stop_seed}")
+    if n==60:
+        save_data(x, y, id=f"_{start_seed}to{stop_seed}")
+    if n==64:
+        save_data64(x, y, id=f"_{start_seed//1000}")
