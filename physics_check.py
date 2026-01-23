@@ -118,6 +118,7 @@ def load_concat(prefix: str, set_ids: list[str]) -> np.ndarray:
 
 def load_predictions() -> np.ndarray:
     if not os.path.exists(PRED_FILE):
+        print("this model does not have the requered files to run this code")
         raise FileNotFoundError(f"Missing predictions file: {PRED_FILE}")
 
     pred = _load_txt(PRED_FILE).reshape((-1, N, N))

@@ -15,6 +15,9 @@ if n == 60:
 elif n == 64:
     x = utils.load_x_test64().reshape((-1, n, n))
     y = utils.load_y_test64().reshape((-1, n, n))
+    if not (model_id == "unet44" or model_id == "cnn_fc64"):
+        x = x[:1000]
+        y = y[:1000]
 else:
     raise ValueError(f"{n} is not a supported resolution")
 

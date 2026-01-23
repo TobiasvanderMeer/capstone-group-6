@@ -5,9 +5,9 @@ import torch
 
 # Which prediction file to visualize (change these two):
 model_id = "cnn_fc64"
-postfix = "_b50"  # use "" for no postfix
+postfix = "_b16"  # use "" for no postfix
 
-n = 64 if model_id in ["unet88", "unet44"] else 60  # choose the right resolution
+n = 64 if model_id in ["unet88", "unet44", "cnn_fc64"] else 60  # choose the right resolution
 
 # Plot at most this many samples (avoid 100 popups)
 MAX_PLOTS = 10
@@ -38,7 +38,7 @@ if n == 60:
 elif n == 64:
     x = utils.load_x_test64().reshape((-1, n, n))
     y = utils.load_y_test64().reshape((-1, n, n))
-    if not model_id == "unet44":
+    if not (model_id == "unet44" or model_id == "cnn_fc64"):
         x = x[:1000]
         y = y[:1000]
 else:

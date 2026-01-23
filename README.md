@@ -1,6 +1,15 @@
 # capstone-group-6
+This is the submission for the capstone course for group 6;
 
-# Large Files
+Rafael Lima Araujo Rego,  
+Bram Verlaat,  
+Janniek Graveland,  
+Tobias van der Meer,  
+Jorrit Paques  
+
+
+
+### Large Files
 we could not upload the files larger than 100Mb to GitHub, so these are available via this link:
 https://tud365-my.sharepoint.com/:u:/g/personal/trvandermeer_tudelft_nl/IQB5xcJwk_3ITIARwehaqtUHAcz325pfvVYoSpKfyuKQ1Zk?e=0aaPuh
 The files in this zip are in the same file location as where they should be placed in the repo. This Includes the model parameter of the models unet44_noglob, unet44 and cnn_fc64
@@ -57,8 +66,8 @@ It is sightly modified such that we can import it from other python files.
 This file also include the darcy solver that we use to generate the date.
 - **utils.py:** Contains code that can be used to easily import the datasets.
 Also defines the train-val_test split
-- **darcy_solver_timer.py**: Measures the time that the darcy solver takes to solve the problems
-
+- **darcy_solver_timer.py:** Measures the time that the darcy solver takes to solve the problems
+- **technical report.pdf:** This is a report explain the models we made and the eplains some of the choices we made during the project.
 
 ### other files
 - **compare_time.py:** Compares the inference time of our models to the darcy solver.

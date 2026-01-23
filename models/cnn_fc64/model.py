@@ -9,11 +9,11 @@ train_mode = 'default2'
 #                     "batch_size": 50,
 #                     "size": 64}
 
-training_settings = {"epochs": 160,
-                     "lr": 1e-4,
-                     "postfix": "_b50_2",
-                     "batch_size": 50,
-                     "size": 64}
+#training_settings = {"epochs": 160,
+#                     "lr": 1e-4,
+#                     "postfix": "_b50_2",
+#                     "batch_size": 50,
+#                     "size": 64}
 
 training_settings = {"epochs": 160,
                      "lr": 1e-4,
