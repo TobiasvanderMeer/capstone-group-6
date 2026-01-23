@@ -5,7 +5,8 @@ we could not upload the files larger than 100Mb to GitHub, so these are availabl
 https://tud365-my.sharepoint.com/:u:/g/personal/trvandermeer_tudelft_nl/IQB5xcJwk_3ITIARwehaqtUHAcz325pfvVYoSpKfyuKQ1Zk?e=0aaPuh
 The files in this zip are in the same file location as where they should be placed in the repo. This Includes the model parameter of the models unet44_noglob, unet44 and cnn_fc64
 
-
+### disclaimer
+Note on naming (test vs true test): We use a held-out true test set that is never seen during training and is used only for final evaluation. In this codebase, our validation split is unfortunately named test_set (historical naming). Concretely, test_set is used for early stopping/model selection, while true_test_set is used only for final reporting.
 
 The repo is structured like this:
 ### datasets
@@ -23,11 +24,11 @@ The models folders contains subfolders, one for each model.
 Each of these folders contains the following:
 - **model.py**: This python file contains the model architecture and the training setting that are used to train it.
 The model should always be called "Model" (class Model(nn.Module):)
-- **pred_test.txt**: these are the predictions of the model on the validation set, after the model was trained (filename is historical and explanation below for it, dont be confused with the actual test_set).
+- **pred_test.txt**: these are the predictions of the model on the validation set, after the model was trained (filename is historical and explanation above for it, dont be confused with the actual test_set).
 These can be used to analyse the model without needing to run the model again.
 The file might contain a postfix.
 - **model_last.pt**: Saves information such as model parameters, losses, training time and more. Can also have postfix.
-- **model_best.pt**: same at model_last.pt, but this is the model with the lowest loss on the test set.
+- **model_best.pt**: same at model_last.pt, but this is the model with the lowest loss on the validation set (which is named test_set in our code, see above for explanation).
 - **convergence_plot.png**: This show the convergence during training. Can also have postfix
 The postfix is a small string added to the filename that allows saving multiple different trained models.
 For example models trained with a different learning rate. The best postfix for each model can be found in the table in the report.
