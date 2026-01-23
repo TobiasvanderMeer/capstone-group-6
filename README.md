@@ -8,6 +8,9 @@ The files in this zip are in the same file location as where they should be plac
 ### disclaimer
 Note on naming (test vs true test): We use a held-out true test set that is never seen during training and is used only for final evaluation. In this codebase, our validation split is unfortunately named test_set (historical naming). Concretely, test_set is used for early stopping/model selection, while true_test_set is used only for final reporting.
 
+Dependencies: Install with pip install -r requirements.txt.
+PyTorch note: torchvision/torchaudio are pinned to CUDA builds (+cu128). If installation fails on your machine, install the appropriate PyTorch/CPU/CUDA version via the official PyTorch installer first, then run pip install -r requirements.txt again.
+
 The repo is structured like this:
 ### datasets
 the datasets folder contains the datasets, h_set is the hydraulic head (output) and k_set is the conductivity (input).
